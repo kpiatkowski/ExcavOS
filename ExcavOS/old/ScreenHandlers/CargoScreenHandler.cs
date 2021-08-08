@@ -35,12 +35,12 @@ namespace IngameScript
 
             private string FormatWithSuffix(double amount)
             {
-                if (amount > 100000)
+                if (amount > 1000000)
                 {
-                    return string.Format("{0,10:0.00}Mt", amount / 100000);
+                    return string.Format("{0,10:0.00}Mt", amount / 1000000);
                 } else if (amount > 1000)
                 {
-                    return string.Format("{0,10:0.00}t", amount / 100);
+                    return string.Format("{0,10:0.00}t", amount / 1000);
                 }
                 return string.Format("{0,10:0.00}kg", amount);
             }
@@ -51,7 +51,6 @@ namespace IngameScript
                 using (var frame = surface.DrawFrame())
                 {
                     Painter.frame = frame;
-                    
                     float margin = 4.0f;
                     float gap = 5.0f;
                     float fontSize = 0.6f;

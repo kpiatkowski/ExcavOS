@@ -30,6 +30,8 @@ namespace IngameScript
             private const string TYPEID_OXYGEN_TANK = "MyObjectBuilder_OxygenTank";
             private const string SUBTYPEID_HYDROGEN_TANK = "HydrogenTank";
             private const string SUBTYPEID_COCKPIT_INDUSTRIAL = "CockpitIndustrial";
+            private const string SUBTYPEID_COCKPIT_SMALL = "SmallBlockCockpit";
+            private const string SUBTYPEID_COCKPIT_LARGE = "LargeBlockCockpitSeat";
 
             private static string ExtractData(string marker, string value)
             {
@@ -60,6 +62,11 @@ namespace IngameScript
             public static bool IsCockpitIndustrial(IMyCockpit cockpit)
             {
                 return cockpit.BlockDefinition.SubtypeId.EndsWith(SUBTYPEID_COCKPIT_INDUSTRIAL);
+            }
+
+            public static bool IsStandardCockpit(IMyCockpit cockpit)
+            {
+                return cockpit.BlockDefinition.SubtypeId.EndsWith(SUBTYPEID_COCKPIT_SMALL) || cockpit.BlockDefinition.SubtypeId.EndsWith(SUBTYPEID_COCKPIT_LARGE);
             }
 
             public static bool IsWindTurbine(IMyTerminalBlock block)

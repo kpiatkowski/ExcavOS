@@ -59,6 +59,14 @@ namespace IngameScript
                     Painter.DrawRectangle(Painter.paint.SecondaryColor, point, size);
                     point.Y += gap;
 
+                    label = context.GetSortersFilter();
+                    Painter.DrawSprite(point, new Vector2(textHeight * 2, textHeight * 2), "AH_BoreSight");
+                    Painter.DrawText(new Vector2(point.X + 3 * gap + textHeight, point.Y), Painter.paint.PrimaryColor, "Ejection filters", fontSize, TextAlignment.LEFT);
+                    Painter.DrawText(new Vector2(Painter.paint.AvailableWidth - (2 * gap + margin), point.Y), Painter.paint.SecondaryColor, label, fontSize, TextAlignment.RIGHT);
+                    point.Y += margin + textHeight + gap;
+                    Painter.DrawRectangle(Painter.paint.SecondaryColor, point, size);
+                    point.Y += gap;
+
                     //Painter.DrawButton(new Vector2(margin * 2, 60), new Vector2(80, 40), "Gravity Align", true);
                 }
             }

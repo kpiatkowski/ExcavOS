@@ -1,0 +1,42 @@
+﻿using Sandbox.Game.EntityComponents;
+using Sandbox.ModAPI.Ingame;
+using Sandbox.ModAPI.Interfaces;
+using SpaceEngineers.Game.ModAPI.Ingame;
+using System.Collections.Generic;
+using System.Collections;
+using System.Linq;
+using System.Text;
+using System;
+using VRage.Collections;
+using VRage.Game.Components;
+using VRage.Game.GUI.TextPanel;
+using VRage.Game.ModAPI.Ingame.Utilities;
+using VRage.Game.ModAPI.Ingame;
+using VRage.Game.ObjectBuilders.Definitions;
+using VRage.Game;
+using VRage;
+using VRageMath;
+
+namespace IngameScript
+{
+    partial class Program
+    {
+        public class LockScreen : ScreenHandler<ExcavOSContext>
+        {
+            public new const string SCREEN_NAME = "LockScreen";
+
+            public LockScreen(ExcavOSContext context) : base(context)
+            {
+            }
+
+            public override void Draw(IMyTextSurface surface)
+            {
+                using (var frame = surface.DrawFrame())
+                {
+                    Painter.SetCurrentSurfaceAndFrame(surface, frame);
+                    Painter.Text(Painter.Center, "No user", 1.0f);
+                }
+            }
+        }
+    }
+}

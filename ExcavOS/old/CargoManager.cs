@@ -20,37 +20,41 @@ namespace IngameScript
 {
     partial class Program
     {
-        public class CargoEntry
-        {
-            public string typeid;
-            public double amount;
-        }
-
         public class CargoManager
         {
-            private readonly BlockFinder<IMyTerminalBlock> cargoBlocks;
+            private const string KEY_EXCLUDE_FROM_CARGO_TRACKING = "ExcludeFromCargoTracking";
+            private BlockFinder<IMyTerminalBlock> cargoBlocks;
             private readonly List<MyInventoryItem> items = new List<MyInventoryItem>();
-            private Config _config;
-
             public double CurrentCapacity;
             public double TotalCapacity;
-            public IDictionary<string, CargoEntry> cargo = new Dictionary<string, CargoEntry>();
+            public IDictionary<string, double> cargo = new Dictionary<string, double>();
+            private readonly MyIni ini = new MyIni();
 
-            public CargoManager(Program program, Config config)
+            public CargoManager(Program program)
             {
                 cargoBlocks = new BlockFinder<IMyTerminalBlock>(program);
-                _config = config;
             }
 
             public void QueryData()
             {
-                cargoBlocks.FindBlocks(true, block => {                    
-                    if (_config.CargoTrackGroupName == "" && block is IMyConveyorSorter)
+                cargoBlocks.FindBlocks(true, block => {
+                    if (MyIni.HasSection(block.CustomData, ExcavOSContext.SECTION_EXCAV_OS))
+                    {
+                        MyIniParseResult result;
+                        if (ini.TryParse(block.CustomData, out result))
+                        {
+                            if (ini.Get(ExcavOSContext.SECTION_EXCAV_OS, KEY_EXCLUDE_FROM_CARGO_TRACKING).ToBoolean())
+                            {
+                                return false;
+                            }                            
+                        }
+                    }
+                    if (block is IMyConveyorSorter || block is IMyShipConnector)
                     {
                         return false;
                     }
                     return block.HasInventory && block.IsFunctional;
-                }, _config.CargoTrackGroupName);
+                });
                 CurrentCapacity = 0;
                 TotalCapacity = 0;
                 cargo.Clear();
@@ -68,39 +72,32 @@ namespace IngameScript
                     block.GetInventory(i).GetItems(items);
                     foreach (MyInventoryItem item in items)
                     {
-                        //if (item.Type.TypeId != "MyObjectBuilder_Ore")
-                        //{
-                        //    continue;
-                        //}
+                        if (item.Type.TypeId != "MyObjectBuilder_Ore")
+                        {
+                            continue;
+                        }
                         //string itemName = item.Type.SubtypeId;
-                        string itemName = item.Type.ToString();
+                        string itemName = item.Type.ToString();                        
                         double amount = (double)item.Amount;
+
                         if (cargo.ContainsKey(itemName))
                         {
-                            CargoEntry ce = cargo[itemName];
-                            ce.amount += amount;
-                            CargoEntry ce2 = cargo[itemName];
+                            cargo[itemName] += amount;
                         } else
                         {
-                            CargoEntry ce = new CargoEntry
-                            {
-                                amount = amount,
-                                typeid = item.Type.TypeId
-                            };
-                            cargo.Add(itemName, ce);
+                            cargo.Add(itemName, amount);
                         }
                     }
                 }
             }
 
-            public void IterateCargoDescending(Action<string, CargoEntry> callback)
+            public void IterateCargoDescending(Action<string, double> callback)
             {
-                foreach (var item in cargo.OrderByDescending(key => key.Value.amount))
+                foreach (var item in cargo.OrderByDescending(key => key.Value))
                 {
                     callback(item.Key, item.Value);
                 }
             }
-
         }
     }
 }
