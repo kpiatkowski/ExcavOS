@@ -37,6 +37,8 @@ namespace IngameScript
             private readonly List<MyInventoryItemFilter> sorterList = new List<MyInventoryItemFilter>();
 
             public bool GravityAlign = false;
+            private bool _GravityAlignActive = false;
+            public bool GravityAlignDown = false;
             public string BatteryCharge = "";
             public string HydrogenCharge = "";
             public double BatteryLevel = 0;
@@ -96,7 +98,11 @@ namespace IngameScript
 
                 if (GravityAlign)
                 {
+                    _GravityAlignActive = true;
                     DoGravityAlign(controller, _gyros.blocks);
+                }
+                if(!GravityAlign && _GravityAlignActive) {
+                    ReleaseGyros(_gyros.blocks);
                 }
             }
 
@@ -224,7 +230,6 @@ namespace IngameScript
                 });
                 UraniumLevel = total / _reactors.Count();
             }
-
             private double DoGravityAlign(IMyShipController controller, List<IMyGyro> gyrosToUse, bool onlyCalculate = false)
             {
 
@@ -276,7 +281,15 @@ namespace IngameScript
                 }
                 return offLevel / gyrosToUse.Count();
             }
-
+            private void ReleaseGyros(List<IMyGyro> gyros) {
+                foreach (IMyGyro gyro in gyros) {
+                    gyro.SetValueFloat("Pitch", 0f);
+                    gyro.SetValueFloat("Yaw", 0f);
+                    gyro.SetValueFloat("Roll", 0f);
+                    gyro.SetValueFloat("Power", 1.0f);
+                    gyro.GyroOverride = false;
+                }
+            }
         }
     }
 }
