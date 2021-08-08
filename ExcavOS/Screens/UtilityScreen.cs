@@ -55,7 +55,7 @@ namespace IngameScript
                         else if (pitch == 90) status = "[Up]";
                         else if (pitch == -90) status = "[Down]";
                         else status = string.Format("[{0}°]", pitch);
-                        Painter.TextEx(new Vector2(Painter.Width - margin, position.Y), (_context._utilitymanager.GravityAlign ? Painter.PrimaryColor : Painter.SecondaryColor), string.Format("{0}{1}", (_context._utilitymanager.GravityAlign ? "On" : "Off"),status), fontSize, TextAlignment.RIGHT);
+                        Painter.TextEx(new Vector2(Painter.Width - margin, position.Y), (_context._utilitymanager.GravityAlign ? Painter.PrimaryColor : Painter.SecondaryColor), string.Format("{0} {1}", (_context._utilitymanager.GravityAlign ? "On" : "Off"),status), fontSize, TextAlignment.RIGHT);
                     } 
                     else
                     {
