@@ -23,8 +23,10 @@ namespace IngameScript
     {
         public class UtilityManager
         {
+            private string sectionKey = "UtilMan";
             private Program _program;
             private Config _config;
+            private MyIni _storage;
             public string Status;
             private CargoManager _cargoManager;
 
@@ -38,17 +40,18 @@ namespace IngameScript
 
             public bool GravityAlign = false;
             private bool _GravityAlignActive = false;
-            public float GravityAlignPitch = 0f;
+            public float GravityAlignPitch = 0;
             public string BatteryCharge = "";
             public string HydrogenCharge = "";
             public double BatteryLevel = 0;
             public double HydrogenLevel = 0;
             public double UraniumLevel = 0;
 
-            public UtilityManager(Program program, Config config, CargoManager cargoManager)
+            public UtilityManager(Program program, Config config, CargoManager cargoManager,MyIni storage)
             {
                 _program = program;
                 _config = config;
+                _storage = storage;
                 _cargoManager = cargoManager;
                 _gyros = new BlockFinder<IMyGyro>(_program);
                 _sorters = new BlockFinder<IMyConveyorSorter>(_program);
@@ -56,6 +59,15 @@ namespace IngameScript
                 _batteries = new BlockFinder<IMyBatteryBlock>(_program);
                 _hydrogenTanks = new BlockFinder<IMyGasTank>(_program);
                 _reactors = new BlockFinder<IMyReactor>(_program);
+                Initialize();
+            }
+
+            public void Save() {
+                _storage.Set(sectionKey, "GAP", GravityAlignPitch);
+            }
+
+            protected void Initialize() {
+                GravityAlignPitch = (float)_storage.Get(sectionKey, "GAP").ToDouble(0);
             }
 
             public void Update()

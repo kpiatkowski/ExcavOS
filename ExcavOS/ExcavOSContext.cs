@@ -25,6 +25,7 @@ namespace IngameScript
         {
             public Program _program;
             private Config _config;
+            public MyIni _storage;
 
             public TimeSpan TimeAccumulator;
             public Random Randomizer = new Random();
@@ -33,13 +34,18 @@ namespace IngameScript
             public UtilityManager _utilitymanager;
             public int tick;
 
-            public ExcavOSContext(Program program, Config config)
+            public ExcavOSContext(Program program, Config config, MyIni storage)
             {
                 _program = program;
                 _config = config;
+                _storage = storage;
                 _cargoManager = new CargoManager(_program, _config);
                 _weightAnalizer = new WeightAnalizer(_program, _config, _cargoManager);
-                _utilitymanager = new UtilityManager(_program, _config, _cargoManager);
+                _utilitymanager = new UtilityManager(_program, _config, _cargoManager, _storage);
+            }
+
+            public void Save() {
+                _utilitymanager.Save();
             }
 
             public void Update(TimeSpan time)
