@@ -38,7 +38,7 @@ namespace IngameScript
 
             public bool GravityAlign = false;
             private bool _GravityAlignActive = false;
-            public bool GravityAlignDown = false;
+            public float GravityAlignPitch = 0f;
             public string BatteryCharge = "";
             public string HydrogenCharge = "";
             public double BatteryLevel = 0;
@@ -99,7 +99,7 @@ namespace IngameScript
                 if (GravityAlign)
                 {
                     _GravityAlignActive = true;
-                    DoGravityAlign(controller, _gyros.blocks);
+                    DoGravityAlign(controller, _gyros.blocks,GravityAlignPitch);
                 }
                 if(!GravityAlign && _GravityAlignActive) {
                     ReleaseGyros(_gyros.blocks);
@@ -230,7 +230,7 @@ namespace IngameScript
                 });
                 UraniumLevel = total / _reactors.Count();
             }
-            private double DoGravityAlign(IMyShipController controller, List<IMyGyro> gyrosToUse, bool onlyCalculate = false)
+            private double DoGravityAlign(IMyShipController controller, List<IMyGyro> gyrosToUse, float pitch = 0f, bool onlyCalculate = false)
             {
 
                 // Thanks to https://forum.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461 
@@ -239,6 +239,13 @@ namespace IngameScript
                 Matrix orientation;
                 controller.Orientation.GetMatrix(out orientation);
                 Vector3D down = orientation.Down;
+                if(pitch < 0) {
+                    down = Vector3D.Lerp(orientation.Down, orientation.Forward, -pitch / 90);
+                }
+                else if(pitch > 0) {
+                    down = Vector3D.Lerp(orientation.Down, -orientation.Forward, pitch / 90);
+                }
+
                 Vector3D gravity = controller.GetNaturalGravity();
                 gravity.Normalize();
                 

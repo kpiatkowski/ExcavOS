@@ -53,13 +53,24 @@ namespace IngameScript
 
             public void HandleCommand(string argument)
             {
-                switch (argument.Split(' ')[0].ToLower())
-                {
+                string[] args = argument.Split(' ');
+                switch (args[0].ToLower()) {
                     case "toggle_gaa":
                         _utilitymanager.GravityAlign = !_utilitymanager.GravityAlign;
                         break;
+                    case "set_gaa_pitch":
+                        char modifier = args[1][0];
+                        float pitch = float.Parse(args[1]);
+                        if (modifier.ToString() == "+" || modifier.ToString() == "-") {
+                            _utilitymanager.GravityAlignPitch += pitch;
+                        }
+                        else if (!float.IsNaN(pitch)) {
+                            _utilitymanager.GravityAlignPitch = pitch;
+                        }
+                        _utilitymanager.GravityAlignPitch = MathHelper.Clamp(_utilitymanager.GravityAlignPitch, -90, 90);
+                        break;
                     case "dump":
-                        _utilitymanager.SetSortersFilter(argument.Split(' ')[1]);
+                        _utilitymanager.SetSortersFilter(args[1]);
                         break;
                 }
             }
