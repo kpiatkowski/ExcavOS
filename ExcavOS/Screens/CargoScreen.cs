@@ -74,7 +74,7 @@ namespace IngameScript
                         Painter.FilledRectangleEx(position, barSize, Painter.SecondaryColor);
                         position.Y += gap;
                     });
-
+                    Painter.Text(position, "",fontSize,TextAlignment.CENTER);
                 }
             }
         }
