@@ -60,9 +60,40 @@ namespace IngameScript
 
             public void QueryData(TimeSpan time)
             {
-                liftThrusters.FindBlocks(true, null, _config.LiftThrustersGroupName);
-                stopThrusters.FindBlocks(true, null, _config.StopThrustersGroupName);
-                controllers.FindBlocks(true, null);
+                controllers.FindBlocks(true, _controller => { return _controller.IsWorking; });
+                IMyShipController controller = controllers.blocks[0];
+                if (_config.LiftThrustersGroupName != "") { 
+                    liftThrusters.FindBlocks(true, null, _config.LiftThrustersGroupName); 
+                }
+                else {
+                    liftThrusters.FindBlocks(true, thruster => {
+                        Vector3D thrusterDirection = -thruster.WorldMatrix.Forward;
+                        double forwardDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Forward);
+                        double upDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Up);
+                        double leftDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Left);
+
+                        if (upDot >= 0.97) {
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+                if (_config.StopThrustersGroupName != "") {
+                    stopThrusters.FindBlocks(true, null, _config.StopThrustersGroupName);
+                }
+                else {
+                    stopThrusters.FindBlocks(true, thruster => {
+                        Vector3D thrusterDirection = -thruster.WorldMatrix.Forward;
+                        double forwardDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Forward);
+                        double upDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Up);
+                        double leftDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Left);
+
+                        if (forwardDot <= -0.97) {
+                            return true;
+                        }
+                        return false;
+                    });
+                }
                 Calculate();
                 CalculateCapacityDelta(time);
             }
