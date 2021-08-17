@@ -150,8 +150,7 @@ namespace IngameScript
                         LiftThrustAvailable += thruster.MaxEffectiveThrust;
                     }
                 });
-                _program.Echo($"LiftThrustAvailable = {LiftThrustAvailable}");
-                _program.Echo($"Mass = {mass}");
+
             }
 
             private void CalculateStopDistance(IMyShipController controller) 

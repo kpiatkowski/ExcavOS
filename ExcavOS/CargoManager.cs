@@ -93,6 +93,11 @@ namespace IngameScript
                 }
             }
 
+            public bool IsEmpty()
+            {
+                return items.Count() == 0;
+            }
+
             public void IterateCargoDescending(Action<string, CargoEntry> callback)
             {
                 foreach (var item in cargo.OrderByDescending(key => key.Value.amount))
