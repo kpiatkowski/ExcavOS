@@ -85,14 +85,14 @@ namespace IngameScript
                 CalculateUranium();
 
                 IMyShipController controller = null;
-                for (int n = 0; n < _controllers.blocks.Count; n++)
-                {
-                    if (_controllers.blocks[n].IsWorking)
-                    {
-                        controller = _controllers.blocks[n];
-                        break;
-                    }
+                IMyShipController firstWorking = null;
+                foreach ( IMyShipController _controller in _controllers.blocks) {
+                    if (!_controller.IsWorking) continue;
+                    if (firstWorking == null) firstWorking = _controller;
+                    if (controller == null && _controller.IsUnderControl && _controller.CanControlShip) controller = _controller;
+                    if (_controller.IsMainCockpit) controller = _controller;
                 }
+                if (controller == null) controller = firstWorking;
 
                 if (controller == null)
                 {
