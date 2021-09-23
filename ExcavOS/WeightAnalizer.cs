@@ -84,33 +84,38 @@ namespace IngameScript
                 }
 
                 Status = "";
-                CalculateLiftThrustUsage(_systemManager.ActiveController);
-                CalculateStopDistance(_systemManager.ActiveController);
+                CalculateLiftThrustUsage(_systemManager.ActiveController, _systemManager.LiftThrusters);
+                CalculateStopDistance(_systemManager.ActiveController, _systemManager.StopThrusters);
             }
 
-            private void CalculateLiftThrustUsage(IMyShipController controller)
+            private void CalculateLiftThrustUsage(IMyShipController controller, List<IMyThrust> thrusters)
             {
                 float mass = controller.CalculateShipMass().PhysicalMass;
-                float gravity = (float)(controller.GetNaturalGravity().Length() / 9.81);                
-                LiftThrustNeeded = (mass * (float)gravity / 100) * 1000;
+                float gravityStrength = (float)(controller.GetNaturalGravity().Length() / 9.81);                
+                LiftThrustNeeded = (mass * (float)gravityStrength / 100) * 1000;
+
+                Vector3 gravity = controller.GetNaturalGravity();
+
 
                 LiftThrustAvailable = 0;
-                _systemManager.LiftThrusters.ForEach(thruster =>
+                thrusters.ForEach(thruster =>
                 {
                     if (thruster.IsWorking)
                     {
-                        LiftThrustAvailable += thruster.MaxEffectiveThrust;
+                        Vector3D thrusterDirection = thruster.WorldMatrix.Forward;
+                        double upDot = Vector3D.Dot(thrusterDirection, Vector3.Normalize(gravity));
+                        LiftThrustAvailable += (thruster.MaxEffectiveThrust*(float)upDot);
                     }
                 });
 
             }
 
-            private void CalculateStopDistance(IMyShipController controller) 
+            private void CalculateStopDistance(IMyShipController controller, List<IMyThrust> thrusters) 
             {
                 float mass = controller.CalculateShipMass().PhysicalMass;
                 double stopThrustAvailable = 0;
                 int disabledThrusters = 0;
-                _systemManager.StopThrusters.ForEach(thruster =>
+                thrusters.ForEach(thruster =>
                 {
                     if (!thruster.IsWorking) disabledThrusters++;
                     if (thruster.IsFunctional)

@@ -79,7 +79,7 @@ namespace IngameScript {
                         double upDot = Vector3D.Dot(thrusterDirection, -Vector3.Normalize(_controller.GetTotalGravity()));
                         //double leftDot = Vector3D.Dot(thrusterDirection, _controller.WorldMatrix.Left);
 
-                        if (upDot >= 0.5) {
+                        if (upDot >= 0.2) {
                             return true;
                         }
                         return false;
