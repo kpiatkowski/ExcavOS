@@ -27,11 +27,8 @@ namespace IngameScript
             private Config _config;
             public string Status;
             private CargoManager _cargoManager;
-
-            private readonly BlockFinder<IMyThrust> stopThrusters;
-            private readonly BlockFinder<IMyThrust> liftThrusters;
-            private readonly BlockFinder<IMyShipController> controllers;
-
+            private SystemManager _systemManager;
+            
             public float LiftThrustNeeded;
             public float LiftThrustAvailable;
             public float StoppingDistance;
@@ -48,52 +45,16 @@ namespace IngameScript
             private WeightPoint[] _weightPoints = new WeightPoint[MaxWeightPoints];
             private int addedWeightPoints = 0;
 
-            public WeightAnalizer(Program program, Config config, CargoManager cargoManager)
+            public WeightAnalizer(Program program, Config config, CargoManager cargoManager, SystemManager systemManager)
             {
                 _program = program;
                 _config = config;
                 _cargoManager = cargoManager;
-                liftThrusters = new BlockFinder<IMyThrust>(_program);
-                stopThrusters = new BlockFinder<IMyThrust>(_program);
-                controllers = new BlockFinder<IMyShipController>(_program);
+                _systemManager = systemManager;
             }
 
             public void QueryData(TimeSpan time)
             {
-                controllers.FindBlocks(true, _controller => { return _controller.IsWorking; });
-                IMyShipController controller = controllers.blocks[0];
-                if (_config.LiftThrustersGroupName != "") { 
-                    liftThrusters.FindBlocks(true, null, _config.LiftThrustersGroupName); 
-                }
-                else {
-                    liftThrusters.FindBlocks(true, thruster => {
-                        Vector3D thrusterDirection = -thruster.WorldMatrix.Forward;
-                        double forwardDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Forward);
-                        double upDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Up);
-                        double leftDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Left);
-
-                        if (upDot >= 0.97) {
-                            return true;
-                        }
-                        return false;
-                    });
-                }
-                if (_config.StopThrustersGroupName != "") {
-                    stopThrusters.FindBlocks(true, null, _config.StopThrustersGroupName);
-                }
-                else {
-                    stopThrusters.FindBlocks(true, thruster => {
-                        Vector3D thrusterDirection = -thruster.WorldMatrix.Forward;
-                        double forwardDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Forward);
-                        double upDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Up);
-                        double leftDot = Vector3D.Dot(thrusterDirection, controller.WorldMatrix.Left);
-
-                        if (forwardDot <= -0.97) {
-                            return true;
-                        }
-                        return false;
-                    });
-                }
                 Calculate();
                 CalculateCapacityDelta(time);
             }
@@ -105,23 +66,14 @@ namespace IngameScript
 
             private void Calculate()
             {
-                IMyShipController controller = null;
-                for (int n = 0; n < controllers.blocks.Count; n++)
-                {
-                    if (controllers.blocks[n].IsWorking)
-                    {
-                        controller = controllers.blocks[n];
-                        break;
-                    }
-                }
 
-                if (controller == null)
+                if (_systemManager.ActiveController == null)
                 {
                     Status = "Missing controller";
                     return;
                 }
 
-                if (controller.CalculateShipMass().PhysicalMass == 0)
+                if (_systemManager.ActiveController.CalculateShipMass().PhysicalMass == 0)
                 {
                     Status = "Grid is static";
                     LiftThrustNeeded = 0;
@@ -132,8 +84,8 @@ namespace IngameScript
                 }
 
                 Status = "";
-                CalculateLiftThrustUsage(controller);
-                CalculateStopDistance(controller);
+                CalculateLiftThrustUsage(_systemManager.ActiveController);
+                CalculateStopDistance(_systemManager.ActiveController);
             }
 
             private void CalculateLiftThrustUsage(IMyShipController controller)
@@ -143,7 +95,7 @@ namespace IngameScript
                 LiftThrustNeeded = (mass * (float)gravity / 100) * 1000;
 
                 LiftThrustAvailable = 0;
-                liftThrusters.ForEach(thruster =>
+                _systemManager.LiftThrusters.ForEach(thruster =>
                 {
                     if (thruster.IsWorking)
                     {
@@ -158,7 +110,7 @@ namespace IngameScript
                 float mass = controller.CalculateShipMass().PhysicalMass;
                 double stopThrustAvailable = 0;
                 int disabledThrusters = 0;
-                stopThrusters.ForEach(thruster =>
+                _systemManager.StopThrusters.ForEach(thruster =>
                 {
                     if (!thruster.IsWorking) disabledThrusters++;
                     if (thruster.IsFunctional)

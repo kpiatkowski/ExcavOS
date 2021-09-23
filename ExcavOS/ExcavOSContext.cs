@@ -32,6 +32,8 @@ namespace IngameScript
             public CargoManager _cargoManager;
             public WeightAnalizer _weightAnalizer;
             public UtilityManager _utilitymanager;
+            public SystemManager _systemmanager;
+
             public int tick;
 
             public ExcavOSContext(Program program, Config config, MyIni storage)
@@ -40,7 +42,8 @@ namespace IngameScript
                 _config = config;
                 _storage = storage;
                 _cargoManager = new CargoManager(_program, _config);
-                _weightAnalizer = new WeightAnalizer(_program, _config, _cargoManager);
+                _systemmanager = new SystemManager(_program, _config);
+                _weightAnalizer = new WeightAnalizer(_program, _config, _cargoManager, _systemmanager);
                 _utilitymanager = new UtilityManager(_program, _config, _cargoManager, _storage);
             }
 
@@ -54,6 +57,7 @@ namespace IngameScript
                 _cargoManager.QueryData();
                 _weightAnalizer.QueryData(time);
                 _utilitymanager.Update();
+                _systemmanager.Update();
                 tick++;
             }
 
