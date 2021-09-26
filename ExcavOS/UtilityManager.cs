@@ -23,8 +23,10 @@ namespace IngameScript
     {
         public class UtilityManager
         {
+            private string sectionKey = "UtilMan";
             private Program _program;
             private Config _config;
+            private MyIni _storage;
             public string Status;
             private CargoManager _cargoManager;
 
@@ -37,16 +39,19 @@ namespace IngameScript
             private readonly List<MyInventoryItemFilter> sorterList = new List<MyInventoryItemFilter>();
 
             public bool GravityAlign = false;
+            private bool _GravityAlignActive = false;
+            public float GravityAlignPitch = 0;
             public string BatteryCharge = "";
             public string HydrogenCharge = "";
             public double BatteryLevel = 0;
             public double HydrogenLevel = 0;
             public double UraniumLevel = 0;
 
-            public UtilityManager(Program program, Config config, CargoManager cargoManager)
+            public UtilityManager(Program program, Config config, CargoManager cargoManager,MyIni storage)
             {
                 _program = program;
                 _config = config;
+                _storage = storage;
                 _cargoManager = cargoManager;
                 _gyros = new BlockFinder<IMyGyro>(_program);
                 _sorters = new BlockFinder<IMyConveyorSorter>(_program);
@@ -54,6 +59,15 @@ namespace IngameScript
                 _batteries = new BlockFinder<IMyBatteryBlock>(_program);
                 _hydrogenTanks = new BlockFinder<IMyGasTank>(_program);
                 _reactors = new BlockFinder<IMyReactor>(_program);
+                Initialize();
+            }
+
+            public void Save() {
+                _storage.Set(sectionKey, "GAP", GravityAlignPitch);
+            }
+
+            protected void Initialize() {
+                GravityAlignPitch = (float)_storage.Get(sectionKey, "GAP").ToDouble(0);
             }
 
             public void Update()
@@ -71,14 +85,14 @@ namespace IngameScript
                 CalculateUranium();
 
                 IMyShipController controller = null;
-                for (int n = 0; n < _controllers.blocks.Count; n++)
-                {
-                    if (_controllers.blocks[n].IsWorking)
-                    {
-                        controller = _controllers.blocks[n];
-                        break;
-                    }
+                IMyShipController firstWorking = null;
+                foreach ( IMyShipController _controller in _controllers.blocks) {
+                    if (!_controller.IsWorking) continue;
+                    if (firstWorking == null) firstWorking = _controller;
+                    if (controller == null && _controller.IsUnderControl && _controller.CanControlShip) controller = _controller;
+                    if (_controller.IsMainCockpit) controller = _controller;
                 }
+                if (controller == null) controller = firstWorking;
 
                 if (controller == null)
                 {
@@ -96,7 +110,11 @@ namespace IngameScript
 
                 if (GravityAlign)
                 {
-                    DoGravityAlign(controller, _gyros.blocks);
+                    _GravityAlignActive = true;
+                    DoGravityAlign(controller, _gyros.blocks,GravityAlignPitch);
+                }
+                if(!GravityAlign && _GravityAlignActive) {
+                    ReleaseGyros(_gyros.blocks);
                 }
             }
 
@@ -224,8 +242,7 @@ namespace IngameScript
                 });
                 UraniumLevel = total / _reactors.Count();
             }
-
-            private double DoGravityAlign(IMyShipController controller, List<IMyGyro> gyrosToUse, bool onlyCalculate = false)
+            private double DoGravityAlign(IMyShipController controller, List<IMyGyro> gyrosToUse, float pitch = 0f, bool onlyCalculate = false)
             {
 
                 // Thanks to https://forum.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461 
@@ -234,6 +251,13 @@ namespace IngameScript
                 Matrix orientation;
                 controller.Orientation.GetMatrix(out orientation);
                 Vector3D down = orientation.Down;
+                if(pitch < 0) {
+                    down = Vector3D.Lerp(orientation.Down, orientation.Forward, -pitch / 90);
+                }
+                else if(pitch > 0) {
+                    down = Vector3D.Lerp(orientation.Down, -orientation.Forward, pitch / 90);
+                }
+
                 Vector3D gravity = controller.GetNaturalGravity();
                 gravity.Normalize();
                 
@@ -276,7 +300,15 @@ namespace IngameScript
                 }
                 return offLevel / gyrosToUse.Count();
             }
-
+            private void ReleaseGyros(List<IMyGyro> gyros) {
+                foreach (IMyGyro gyro in gyros) {
+                    gyro.SetValueFloat("Pitch", 0f);
+                    gyro.SetValueFloat("Yaw", 0f);
+                    gyro.SetValueFloat("Roll", 0f);
+                    gyro.SetValueFloat("Power", 1.0f);
+                    gyro.GyroOverride = false;
+                }
+            }
         }
     }
 }

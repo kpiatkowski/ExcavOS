@@ -49,14 +49,13 @@ namespace IngameScript
                     Painter.Text(position, "Gravity Align", fontSize, TextAlignment.LEFT);
                     if (_context._utilitymanager.Status == "")
                     {
-                        if (_context._utilitymanager.GravityAlign)
-                        {                            
-                            Painter.Text(new Vector2(Painter.Width - margin, position.Y), "Enabled", fontSize, TextAlignment.RIGHT);
-                        }
-                        else
-                        {
-                            Painter.TextEx(new Vector2(Painter.Width - margin, position.Y), Painter.SecondaryColor, "Disabled", fontSize, TextAlignment.RIGHT);
-                        }
+                        float pitch = _context._utilitymanager.GravityAlignPitch;
+                        string status;
+                        if (pitch == 0) status = "[Level]";
+                        else if (pitch == 90) status = "[Up]";
+                        else if (pitch == -90) status = "[Down]";
+                        else status = string.Format("[{0}°]", pitch);
+                        Painter.TextEx(new Vector2(Painter.Width - margin, position.Y), (_context._utilitymanager.GravityAlign ? Painter.PrimaryColor : Painter.SecondaryColor), string.Format("{0} {1}", (_context._utilitymanager.GravityAlign ? "On" : "Off"),status), fontSize, TextAlignment.RIGHT);
                     } 
                     else
                     {

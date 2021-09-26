@@ -24,8 +24,8 @@ namespace IngameScript
         public class Config : ScriptConfig
         {
 
-            public string LiftThrustersGroupName = "Lift Thrusters";
-            public string StopThrustersGroupName = "Stop Thrusters";
+            public string LiftThrustersGroupName = "";
+            public string StopThrustersGroupName = "";
             public string CargoTrackGroupName = "";
             public string AlignGyrosGroupName = "";
             public string DumpSortersGroupName = "";

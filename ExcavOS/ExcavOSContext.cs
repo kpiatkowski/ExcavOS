@@ -25,21 +25,30 @@ namespace IngameScript
         {
             public Program _program;
             private Config _config;
+            public MyIni _storage;
 
             public TimeSpan TimeAccumulator;
             public Random Randomizer = new Random();
             public CargoManager _cargoManager;
             public WeightAnalizer _weightAnalizer;
             public UtilityManager _utilitymanager;
+            public SystemManager _systemmanager;
+
             public int tick;
 
-            public ExcavOSContext(Program program, Config config)
+            public ExcavOSContext(Program program, Config config, MyIni storage)
             {
                 _program = program;
                 _config = config;
+                _storage = storage;
                 _cargoManager = new CargoManager(_program, _config);
-                _weightAnalizer = new WeightAnalizer(_program, _config, _cargoManager);
-                _utilitymanager = new UtilityManager(_program, _config, _cargoManager);
+                _systemmanager = new SystemManager(_program, _config);
+                _weightAnalizer = new WeightAnalizer(_program, _config, _cargoManager, _systemmanager);
+                _utilitymanager = new UtilityManager(_program, _config, _cargoManager, _storage);
+            }
+
+            public void Save() {
+                _utilitymanager.Save();
             }
 
             public void Update(TimeSpan time)
@@ -48,18 +57,30 @@ namespace IngameScript
                 _cargoManager.QueryData();
                 _weightAnalizer.QueryData(time);
                 _utilitymanager.Update();
+                _systemmanager.Update();
                 tick++;
             }
 
             public void HandleCommand(string argument)
             {
-                switch (argument.Split(' ')[0].ToLower())
-                {
+                string[] args = argument.Split(' ');
+                switch (args[0].ToLower()) {
                     case "toggle_gaa":
                         _utilitymanager.GravityAlign = !_utilitymanager.GravityAlign;
                         break;
+                    case "set_gaa_pitch":
+                        char modifier = args[1][0];
+                        float pitch = float.Parse(args[1]);
+                        if (modifier.ToString() == "+" || modifier.ToString() == "-") {
+                            _utilitymanager.GravityAlignPitch += pitch;
+                        }
+                        else if (!float.IsNaN(pitch)) {
+                            _utilitymanager.GravityAlignPitch = pitch;
+                        }
+                        _utilitymanager.GravityAlignPitch = MathHelper.Clamp(_utilitymanager.GravityAlignPitch, -90, 90);
+                        break;
                     case "dump":
-                        _utilitymanager.SetSortersFilter(argument.Split(' ')[1]);
+                        _utilitymanager.SetSortersFilter(args[1]);
                         break;
                 }
             }

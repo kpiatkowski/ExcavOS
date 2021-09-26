@@ -30,12 +30,14 @@ namespace IngameScript
             protected readonly string _scriptName;
             private readonly string _scriptVersion;
             protected readonly MyIni _ini = new MyIni();
+            protected readonly MyIni _storage;
             protected Config _config;
             protected TimeSpan _timeAccumulator = new TimeSpan();
 
-            public ScriptHandler(Program program, string scriptName, string scriptVersion)
+            public ScriptHandler(Program program, MyIni storage , string scriptName, string scriptVersion)
             {
                 _program = program;
+                _storage = storage;
                 _scriptName = scriptName;
                 _scriptVersion = scriptVersion;
                 _config = new Config(_ini, _scriptName);

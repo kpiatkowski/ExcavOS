@@ -39,6 +39,7 @@
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
     <Compile Include="CargoManager.cs" />
+    <Compile Include="SystemManager.cs" />
     <Compile Include="Common\BlockFinder.cs" />
     <Compile Include="Common\BlockHelper.cs" />
     <Compile Include="Common\OldPainter.cs" />

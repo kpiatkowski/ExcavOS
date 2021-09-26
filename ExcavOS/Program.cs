@@ -22,21 +22,21 @@ namespace IngameScript
     partial class Program : MyGridProgram
     {
         private ExcavOS _scriptHandler;
+        private MyIni _storage;
 
         public Program()
         {
-            _scriptHandler = new ExcavOS(this);
+            _storage = new MyIni();
+            _storage.TryParse(Storage);
+            _scriptHandler = new ExcavOS(this,_storage);
             Runtime.UpdateFrequency = UpdateFrequency.Update10 | UpdateFrequency.Update100;
         }
 
         public void Save()
         {
-            // Called when the program needs to save its state. Use
-            // this method to save your state to the Storage field
-            // or some other means. 
-            // 
-            // This method is optional and can be removed if not
-            // needed.
+            _scriptHandler.Save();
+            Storage = _storage.ToString();
+            
         }
 
         public void Main(string argument, UpdateType updateSource)
