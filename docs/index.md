@@ -15,7 +15,7 @@ or
 - Lift thrust usage. Tells you how much more you can carry and still be able to withstand planet gravity.
 - Align to gravity with ability to set custom pitch.
 - Support for ejecting systems. Allows to quickly dump any ore by manipulating whitelist on sorters.
-- Cruise control. **Still in test**
+- **(WIP)** Cruise control.
 - Stopping distance calculation.
 - Battery, hydrogen and uranium levels.
 - Works on any screen surface (cockpits or standalone screens).
@@ -38,6 +38,6 @@ Paste it in *Custom Data* of a block that contains screens on which you want Exc
 
 ## In depth guides
 - [Configuration](configuration.md)
-- [Ccreens](screens.md) 
+- [Screens](screens.md) 
 - [Commands](commands.md)
 - [FAQ](faq.md)
