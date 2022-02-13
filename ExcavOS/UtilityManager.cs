@@ -29,6 +29,7 @@ namespace IngameScript
             private MyIni _storage;
             public string Status;
             private CargoManager _cargoManager;
+            private SystemManager _systemManager;
 
             private readonly BlockFinder<IMyGyro> _gyros;
             private readonly BlockFinder<IMyShipController> _controllers;
@@ -37,37 +38,50 @@ namespace IngameScript
             private readonly BlockFinder<IMyGasTank> _hydrogenTanks;
             private readonly BlockFinder<IMyReactor> _reactors;
             private readonly List<MyInventoryItemFilter> sorterList = new List<MyInventoryItemFilter>();
+            public readonly PIDController thrustPID = new PIDController(1.0 / 60.0);
+
+            private const double ThrustKp = 0.5;
+            private const double ThrustTi = 0.1;
+            private const double ThrustTd = 0.0;
 
             public bool GravityAlign = false;
+            public bool CruiseEnabled = false;
             private bool _GravityAlignActive = false;
             public float GravityAlignPitch = 0;
+            public float CruiseTarget = 0;
             public string BatteryCharge = "";
             public string HydrogenCharge = "";
             public double BatteryLevel = 0;
             public double HydrogenLevel = 0;
             public double UraniumLevel = 0;
 
-            public UtilityManager(Program program, Config config, CargoManager cargoManager,MyIni storage)
+            public UtilityManager(Program program, Config config, CargoManager cargoManager, SystemManager systemManager, MyIni storage)
             {
                 _program = program;
                 _config = config;
                 _storage = storage;
                 _cargoManager = cargoManager;
+                _systemManager = systemManager;
                 _gyros = new BlockFinder<IMyGyro>(_program);
                 _sorters = new BlockFinder<IMyConveyorSorter>(_program);
                 _controllers = new BlockFinder<IMyShipController>(_program);
                 _batteries = new BlockFinder<IMyBatteryBlock>(_program);
                 _hydrogenTanks = new BlockFinder<IMyGasTank>(_program);
                 _reactors = new BlockFinder<IMyReactor>(_program);
+                thrustPID.Kp = ThrustKp;
+                thrustPID.Ti = ThrustTi;
+                thrustPID.Td = ThrustTd;
                 Initialize();
             }
 
             public void Save() {
                 _storage.Set(sectionKey, "GAP", GravityAlignPitch);
+                _storage.Set(sectionKey, "CruiseTarget", CruiseTarget);
             }
 
             protected void Initialize() {
                 GravityAlignPitch = (float)_storage.Get(sectionKey, "GAP").ToDouble(0);
+                CruiseTarget = (float)_storage.Get(sectionKey, "CruiseTarget").ToDouble(0);
             }
 
             public void Update()
@@ -115,6 +129,49 @@ namespace IngameScript
                 }
                 if(!GravityAlign && _GravityAlignActive) {
                     ReleaseGyros(_gyros.blocks);
+                }
+
+                if (CruiseEnabled)
+                {
+                    double currentSpeed = controller.GetShipSpeed();
+
+                    var error = CruiseTarget - currentSpeed;
+                    var force = thrustPID.Compute(error);
+                    _systemManager.CruiseThrusters.ForEach(thruster =>
+                    {
+                        if (Math.Abs(error) < 0.02f * CruiseTarget)
+                        {
+                            thruster.ThrustOverridePercentage = 0.0f;
+                        } else if (force > 0.0)
+                        {
+                            thruster.Enabled = true;
+                            thruster.ThrustOverridePercentage = (float)force * 0.1f;                            
+                        } else
+                        {
+                            thruster.ThrustOverridePercentage = 0.0f;
+                            thruster.Enabled = false;
+                        }
+                    });
+
+                    _systemManager.CruiseReverseThrusters.ForEach(thruster =>
+                    {
+                        if (Math.Abs(error) < 0.02f * CruiseTarget)
+                        {
+                            thruster.ThrustOverridePercentage = 0.0f;
+                            thruster.Enabled = false;
+                        }
+                        else if (force > 0.0)
+                        {
+                            thruster.ThrustOverridePercentage = 0.0f;
+                            thruster.Enabled = false;
+                        }
+                        else
+                        {
+                            thruster.Enabled = true;
+                            thruster.ThrustOverridePercentage = -(float)force * 0.1f;
+                        }
+                    });
+
                 }
             }
 
@@ -196,7 +253,7 @@ namespace IngameScript
                     capacity += tank.Capacity;
                 });
                 HydrogenLevel = total / capacity;
-                HydrogenCharge = string.Format("{0:0.00}%", (total / capacity) * 100);
+                HydrogenCharge = string.Format("{0:0.0}%", (total / capacity) * 100);
             }
 
             private void CalculateCharge()
@@ -218,7 +275,7 @@ namespace IngameScript
 
                 if (max > 0)
                 {
-                    BatteryCharge = string.Format("{0:0.00}%", (stored / max) * 100);
+                    BatteryCharge = string.Format("{0:0.0}%", (stored / max) * 100);
                     BatteryLevel = stored / max;
                 } else
                 {

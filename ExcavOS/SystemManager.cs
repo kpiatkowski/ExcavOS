@@ -30,11 +30,15 @@ namespace IngameScript {
             private IMyShipController _controller;
 
             private readonly BlockFinder<IMyThrust> _liftThrusters;
+            private readonly BlockFinder<IMyThrust> _cruiseThrusters;
+            private readonly BlockFinder<IMyThrust> _cruiseReverseThrusters;
             private readonly BlockFinder<IMyThrust> _stopThrusters;
 
             public IMyShipController ActiveController { get { return _controller; } }
             public List<IMyThrust> LiftThrusters { get { return _liftThrusters.blocks; } }
             public List<IMyThrust> StopThrusters { get { return _stopThrusters.blocks; } }
+            public List<IMyThrust> CruiseThrusters { get { return _cruiseThrusters.blocks; } }
+            public List<IMyThrust> CruiseReverseThrusters { get { return _cruiseReverseThrusters.blocks; } }
 
             public SystemManager(Program program, Config config) {
                 _program = program;
@@ -43,7 +47,8 @@ namespace IngameScript {
                 _controllers = new BlockFinder<IMyShipController>(_program);
                 _liftThrusters = new BlockFinder<IMyThrust>(_program);
                 _stopThrusters = new BlockFinder<IMyThrust>(_program);
-                
+                _cruiseThrusters = new BlockFinder<IMyThrust>(_program);
+                _cruiseReverseThrusters = new BlockFinder<IMyThrust>(_program);
             }
 
             public void Update() {
@@ -63,7 +68,6 @@ namespace IngameScript {
 
                 if (_controller == null) {
                     throw new Exception("Missing Controller!");
-                    return;
                 }
             }
             private void UpdateThrusterGroups() {
@@ -100,6 +104,14 @@ namespace IngameScript {
                         return false;
                     });
                 }
+                _cruiseThrusters.FindBlocks(true, thruster => {
+                    var facing = thruster.Orientation.TransformDirection(Base6Directions.Direction.Forward);
+                    return facing == Base6Directions.Direction.Backward;
+                });
+                _cruiseReverseThrusters.FindBlocks(true, thruster => {
+                    var facing = thruster.Orientation.TransformDirection(Base6Directions.Direction.Forward);
+                    return facing == Base6Directions.Direction.Forward;
+                });
             }
         }
     }

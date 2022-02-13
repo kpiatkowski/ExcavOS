@@ -30,8 +30,10 @@ namespace IngameScript
         {
             private readonly BlockFinder<IMyTerminalBlock> cargoBlocks;
             private readonly List<MyInventoryItem> items = new List<MyInventoryItem>();
-            private Config _config;
+            public bool hasAnyOre = false;
+            public bool hasSomethingExceptOre = false;
 
+            private Config _config;
             public double CurrentCapacity;
             public double TotalCapacity;
             public IDictionary<string, CargoEntry> cargo = new Dictionary<string, CargoEntry>();
@@ -53,6 +55,8 @@ namespace IngameScript
                 }, _config.CargoTrackGroupName);
                 CurrentCapacity = 0;
                 TotalCapacity = 0;
+                hasAnyOre = false;
+                hasSomethingExceptOre = false;
                 cargo.Clear();
                 cargoBlocks.ForEach(ProcessBlock);
             }
@@ -63,17 +67,21 @@ namespace IngameScript
                 {
                     items.Clear();
                     IMyInventory inventory = block.GetInventory(0);
+                    
                     CurrentCapacity += (double)inventory.CurrentVolume;
                     TotalCapacity += (double)inventory.MaxVolume;
                     block.GetInventory(i).GetItems(items);
                     foreach (MyInventoryItem item in items)
                     {
-                        //if (item.Type.TypeId != "MyObjectBuilder_Ore")
-                        //{
-                        //    continue;
-                        //}
+                        if (item.Type.TypeId == "MyObjectBuilder_Ore")
+                        {
+                            hasAnyOre = true;
+                        } else
+                        {
+                            hasSomethingExceptOre = true;
+                        }
                         //string itemName = item.Type.SubtypeId;
-                        string itemName = item.Type.ToString();
+                        string itemName = item.Type.ToString();                        
                         double amount = (double)item.Amount;
                         if (cargo.ContainsKey(itemName))
                         {
@@ -95,7 +103,7 @@ namespace IngameScript
 
             public bool IsEmpty()
             {
-                return items.Count() == 0;
+                return cargo.Count() == 0;
             }
 
             public void IterateCargoDescending(Action<string, CargoEntry> callback)

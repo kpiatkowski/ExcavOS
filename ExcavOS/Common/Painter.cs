@@ -175,6 +175,43 @@ namespace IngameScript
                 }
             }
 
+            public static void FullRadial(Vector2 position, Vector2 size, float value, string subText = "", int bars = 20)
+            {
+                if (value < 0.0f) value = 0;
+                if (value > 1.0f) value = 1.0f;
+                Color secondary = new Color(SecondaryColor, 0.1f);
+                Vector2 barPosition, barSize;
+                MySprite sprite;
+                barSize = new Vector2(size.X / 256 * 20.0f, size.X / 128 * 4.0f);
+                float radius = (size.X - barSize.X) / 2.0f;
+                float fontSize = 0.5f + size.X / 256.0f;
+                Vector2 origin = new Vector2(position.X + radius, position.Y + size.Y);
+                string text = string.Format("{0:0.00}%", value * 100);
+                StringBuilder sb = new StringBuilder();
+                sb.Append(text);
+                Vector2 mainTextSize = _surface.MeasureStringInPixels(sb, _surface.Font, fontSize);
+                sb.Clear();
+                sb.Append(subText);
+                Vector2 subTextSize = _surface.MeasureStringInPixels(sb, _surface.Font, fontSize / 2.0f);
+                for (int n = 0; n <= bars; n++)
+                {
+                    float angle = -(float)Math.PI / 2.0f + n * (2.0f * (float)Math.PI / (bars + 1));
+                    float v = (float)n / bars;
+                    float barScale = 0.2f + v * 0.8f;
+                    barPosition = new Vector2((float)(radius * Math.Sin(angle)) + barSize.X / 2.0f, -(float)(radius * Math.Cos(angle)) - barSize.Y / 2.0f);
+                    sprite = new MySprite(SpriteType.TEXTURE, "SquareSimple", size: new Vector2(barSize.X, barSize.Y * barScale), color: value > v ? _surface.ScriptForegroundColor : secondary)
+                    {
+                        Position = origin + barPosition + _offset,
+                        RotationOrScale = angle + (float)Math.PI / 2.0f
+                    };
+                    _frame.Add(sprite);
+                    Vector2 textPosition = new Vector2(position.X + size.X / 2.0f, origin.Y - mainTextSize.Y / 2.0f);
+                    Text(textPosition, text, fontSize);
+                    textPosition.Y += -subTextSize.Y;
+                    TextEx(textPosition, SecondaryColor, subText, fontSize / 2.0f);
+                }
+            }
+
             public static void ProgressBar(Vector2 position, Vector2 size, float value, float borderThickness = 1.0f, string sprite = "")
             {
                 if (value < 0.0f) value = 0.0f;
@@ -188,6 +225,26 @@ namespace IngameScript
                     Vector2 center = position + size / 2.0f - spriteSize / 2.0f;
                     Sprite(center, spriteSize, sprite, SecondaryColor);
                 }                
+            }
+
+            public static void ProgressBarWithIconAndText(Vector2 position, Vector2 size, float value, float borderThickness = 1.0f, string sprite = "", string text = "")
+            {
+                if (value < 0.0f) value = 0.0f;
+                if (value > 1.0f) value = 1.0f;
+                RectangleEx(position, size, borderThickness, SecondaryColor);
+                size -= 2 * borderThickness;
+                FilledRectangle(position + borderThickness, new Vector2(size.X * value, size.Y));
+                if (sprite != "")
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append(text);
+                    Vector2 textSize = _surface.MeasureStringInPixels(sb, _surface.Font, 0.7f);
+                    Vector2 spriteSize = new Vector2(size.Y, size.Y);
+                    Vector2 rightPos = new Vector2(position.X + size.X, position.Y + (size.Y - textSize.Y) / 2.0f);
+                    TextEx(rightPos, SecondaryColor, text, 0.7f, TextAlignment.RIGHT);
+                    Vector2 leftPos = new Vector2(position.X, position.Y + (size.Y - spriteSize.Y) / 2.0f);
+                    Sprite(leftPos, spriteSize, sprite, SecondaryColor);
+                }
             }
 
             public static void ProgressBarVertical(Vector2 position, Vector2 size, float value, float borderThickness = 1.0f, string sprite = "")

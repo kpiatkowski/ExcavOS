@@ -44,7 +44,7 @@ namespace IngameScript
                 _cargoManager = new CargoManager(_program, _config);
                 _systemmanager = new SystemManager(_program, _config);
                 _weightAnalizer = new WeightAnalizer(_program, _config, _cargoManager, _systemmanager);
-                _utilitymanager = new UtilityManager(_program, _config, _cargoManager, _storage);
+                _utilitymanager = new UtilityManager(_program, _config, _cargoManager, _systemmanager, _storage);
             }
 
             public void Save() {
@@ -78,6 +78,32 @@ namespace IngameScript
                             _utilitymanager.GravityAlignPitch = pitch;
                         }
                         _utilitymanager.GravityAlignPitch = MathHelper.Clamp(_utilitymanager.GravityAlignPitch, -90, 90);
+                        break;
+                    case "toggle_cruise":
+                        _utilitymanager.CruiseEnabled = !_utilitymanager.CruiseEnabled;
+                        if (_utilitymanager.CruiseEnabled)
+                        {
+                            _utilitymanager.thrustPID.Reset();
+                        } else
+                        {
+                            _systemmanager.CruiseThrusters.ForEach(thruster => thruster.ThrustOverridePercentage = 0.0f);
+                            _systemmanager.CruiseReverseThrusters.ForEach(thruster => {
+                                thruster.ThrustOverridePercentage = 0.0f;
+                                thruster.Enabled = true;
+                            });
+                        }
+                        break;
+                    case "set_cruise":
+                        modifier = args[1][0];
+                        float speed = float.Parse(args[1]);
+                        if (modifier.ToString() == "+" || modifier.ToString() == "-")
+                        {
+                            _utilitymanager.CruiseTarget += speed;
+                        }
+                        else if (!float.IsNaN(speed))
+                        {
+                            _utilitymanager.CruiseTarget = speed;
+                        }                        
                         break;
                     case "dump":
                         _utilitymanager.SetSortersFilter(args[1]);
