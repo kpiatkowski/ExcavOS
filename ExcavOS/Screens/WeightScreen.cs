@@ -25,6 +25,7 @@ namespace IngameScript
         public class WeightScreen : ScreenHandler<ExcavOSContext>
         {
             public new const string SCREEN_NAME = "Weight";
+            private bool MakeSpriteCacheDirty = false;
  
             public WeightScreen(ExcavOSContext context) : base(context)
             {
@@ -36,6 +37,16 @@ namespace IngameScript
 
                 using (var frame = surface.DrawFrame())
                 {
+                    MakeSpriteCacheDirty = !MakeSpriteCacheDirty;
+                    if (MakeSpriteCacheDirty)
+                    {
+                        frame.Add(new MySprite()
+                        {
+                            Type = SpriteType.TEXTURE,
+                            Data = "SquareSimple",
+                            Color = surface.BackgroundColor,
+                        });
+                    }
                     Painter.SetCurrentSurfaceAndFrame(surface, frame);
 
                     bool roverMode = _context._systemmanager.LiftThrusters.Count == 0;

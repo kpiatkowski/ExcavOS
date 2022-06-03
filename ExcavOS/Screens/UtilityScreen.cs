@@ -25,6 +25,7 @@ namespace IngameScript
         public class UtilityScreen : ScreenHandler<ExcavOSContext>
         {
             public new const string SCREEN_NAME = "Utility";
+            private bool MakeSpriteCacheDirty = false;
 
             private readonly StringBuilder sb = new StringBuilder();
 
@@ -36,6 +37,16 @@ namespace IngameScript
             {
                 using (var frame = surface.DrawFrame())
                 {
+                    MakeSpriteCacheDirty = !MakeSpriteCacheDirty;
+                    if (MakeSpriteCacheDirty)
+                    {
+                        frame.Add(new MySprite()
+                        {
+                            Type = SpriteType.TEXTURE,
+                            Data = "SquareSimple",
+                            Color = surface.BackgroundColor,
+                        });
+                    }
                     Painter.SetCurrentSurfaceAndFrame(surface, frame);
                     float margin = Painter.Width >= 512.0f ? 25.0f : 5.0f;
                     float gap = Painter.Width >= 512.0f ? 10.0f : 2.0f;
