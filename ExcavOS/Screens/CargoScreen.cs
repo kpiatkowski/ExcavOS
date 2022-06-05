@@ -60,7 +60,7 @@ namespace IngameScript
                         {
                             Type = SpriteType.TEXTURE,
                             Data = "SquareSimple",
-                            Color = surface.BackgroundColor,
+                            Color = surface.ScriptBackgroundColor,
                         });
                     }
                     Painter.SetCurrentSurfaceAndFrame(surface, frame);
