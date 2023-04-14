@@ -39,7 +39,7 @@ namespace IngameScript
                     Painter.SetCurrentSurfaceAndFrame(surface, frame);
 
                     bool roverMode = _context._systemmanager.LiftThrusters.Count == 0;
-                    float liftUsage = _context._weightAnalizer.LiftThrustNeeded / _context._weightAnalizer.LiftThrustAvailable;
+                    float liftUsage = _context._weightAnalizer.LiftThrustAvailable;
                     float cargoUsage = (float)(_context._cargoManager.CurrentCapacity / _context._cargoManager.TotalCapacity);
                     float margin = 20.0f;
                     float max = Math.Min(Painter.AvailableSize.X, Painter.AvailableSize.Y);

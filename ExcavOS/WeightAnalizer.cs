@@ -90,6 +90,7 @@ namespace IngameScript
 
             private void CalculateLiftThrustUsage(IMyShipController controller, List<IMyThrust> thrusters)
             {
+                /*
                 float mass = controller.CalculateShipMass().PhysicalMass;
                 float gravityStrength = (float)(controller.GetNaturalGravity().Length() / 9.81);                
                 LiftThrustNeeded = (mass * (float)gravityStrength / 100) * 1000;
@@ -107,7 +108,20 @@ namespace IngameScript
                         LiftThrustAvailable += (thruster.MaxEffectiveThrust*(float)upDot);
                     }
                 });
-
+                */
+                LiftThrustNeeded = 0;
+                thrusters.ForEach(thruster =>
+                {
+                    if (thruster.IsWorking)
+                    {
+                        if (thruster.CurrentThrustPercentage > LiftThrustNeeded)
+                        {
+                            LiftThrustNeeded = thruster.CurrentThrustPercentage;
+                        }
+                    }
+                });
+                LiftThrustNeeded *= 0.01f;
+                LiftThrustAvailable = (float)MathHelper.Lerp(LiftThrustAvailable, LiftThrustNeeded, 0.5);
             }
 
             private void CalculateStopDistance(IMyShipController controller, List<IMyThrust> thrusters) 
