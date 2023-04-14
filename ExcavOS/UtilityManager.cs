@@ -301,25 +301,30 @@ namespace IngameScript
             }
             private double DoGravityAlign(IMyShipController controller, List<IMyGyro> gyrosToUse, float pitch = 0f, bool onlyCalculate = false)
             {
-
                 // Thanks to https://forum.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461 
-                
+
                 double coefficient = 0.9;
                 Matrix orientation;
                 controller.Orientation.GetMatrix(out orientation);
+
                 Vector3D down = orientation.Down;
-                if(pitch < 0) {
+                if (pitch < 0)
+                {
                     down = Vector3D.Lerp(orientation.Down, orientation.Forward, -pitch / 90);
                 }
-                else if(pitch > 0) {
+                else if (pitch > 0)
+                {
                     down = Vector3D.Lerp(orientation.Down, -orientation.Forward, pitch / 90);
                 }
 
                 Vector3D gravity = controller.GetNaturalGravity();
                 gravity.Normalize();
-                
+
                 double offLevel = 0.0;
-                
+
+                Vector3 mouse = new Vector3(controller.RotationIndicator * 0.1f, controller.RollIndicator * 9);
+                mouse *= _config.MouseSensitivity;
+
                 foreach (var gyro in gyrosToUse)
                 {
                     gyro.Orientation.GetMatrix(out orientation);
@@ -330,13 +335,14 @@ namespace IngameScript
                     double ang = rotation.Length();
                     ang = Math.Atan2(ang, Math.Sqrt(Math.Max(0.0, 1.0 - ang * ang)));
 
+                    /*
                     if (ang < 0.01)
                     {
                         gyro.GyroOverride = false;
                         continue;
-                    }
+                    }*/
                     offLevel += ang * 180.0 / 3.14;
-                    
+
                     if (!onlyCalculate)
                     {
                         double controlVelocity = gyro.GetMaximum<float>("Yaw") * (ang / Math.PI) * coefficient;
@@ -344,10 +350,10 @@ namespace IngameScript
                         controlVelocity = Math.Max(0.01, controlVelocity); //Gyros don't work well at very low speeds
                         rotation.Normalize();
                         rotation *= controlVelocity;
-                        gyro.SetValueFloat("Pitch", (float)rotation.GetDim(0));
-                        gyro.SetValueFloat("Yaw", -(float)rotation.GetDim(1));
-                        gyro.SetValueFloat("Roll", -(float)rotation.GetDim(2));
-                        gyro.SetValueFloat("Power", 1.0f);
+                        gyro.SetValueFloat("Pitch", (float)rotation.GetDim(0) + mouse.X);
+                        gyro.SetValueFloat("Yaw", -((float)rotation.GetDim(1) - mouse.Y));
+                        gyro.SetValueFloat("Roll", -(float)rotation.GetDim(2) - mouse.Z);
+                        //gyro.SetValueFloat("Power", 1.0f);
                         gyro.GyroOverride = true;
                     }
                 }

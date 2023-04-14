@@ -30,6 +30,7 @@ namespace IngameScript
             public string AlignGyrosGroupName = "";
             public string DumpSortersGroupName = "";
             public float LiftThresholdWarning = 0.9f;
+            public float MouseSensitivity = 1f;
 
             public Config(MyIni ini, string section) : base(ini, section)
             {
@@ -42,6 +43,7 @@ namespace IngameScript
                 _ini.Set(_section, "CargoTrackGroupName", CargoTrackGroupName);
                 _ini.Set(_section, "AlignGyrosGroupName", AlignGyrosGroupName);
                 _ini.Set(_section, "DumpSortersGroupName", DumpSortersGroupName);
+                _ini.Set(_section, "MouseSensitivity", MouseSensitivity);
                 _ini.Set(_section, "LiftThresholdWarning", LiftThresholdWarning);
             }
 
@@ -53,6 +55,7 @@ namespace IngameScript
                 AlignGyrosGroupName = GetValue("AlignGyrosGroupName").ToString(AlignGyrosGroupName);
                 DumpSortersGroupName = GetValue("DumpSortersGroupName").ToString(DumpSortersGroupName);
                 LiftThresholdWarning = GetValue("LiftThresholdWarning").ToSingle(LiftThresholdWarning);
+                MouseSensitivity = GetValue("MouseSensitivity").ToSingle(MouseSensitivity);
             }
         }
     }
