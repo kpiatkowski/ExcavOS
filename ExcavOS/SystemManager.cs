@@ -17,12 +17,9 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace IngameScript
-{
-    partial class Program
-    {
-        public class SystemManager
-        {
+namespace IngameScript {
+    partial class Program {
+        public class SystemManager {
 
             public string Status;
             private Program _program;
@@ -38,8 +35,7 @@ namespace IngameScript
             public IMyShipController ActiveController { get { return _controller; } }
             public List<IMyThrust> Thrusters { get { return _Thrusters.blocks; } }
             public ThrustGroups ThrusterGroups { get { return _ThrustGroups; } }
-            public SystemManager(Program program, Config config)
-            {
+            public SystemManager(Program program, Config config) {
                 _program = program;
                 _config = config;
                 _gyros = new BlockFinder<IMyGyro>(_program);
@@ -48,17 +44,14 @@ namespace IngameScript
                 _ThrustGroups = new ThrustGroups();
             }
 
-            public void Update()
-            {
+            public void Update() {
                 UpdateController();
                 UpdateThrusterGroups();
             }
-            private void UpdateController()
-            {
+            private void UpdateController() {
                 IMyShipController firstWorking = null;
                 _controllers.FindBlocks(true, null, "");
-                foreach (IMyShipController _controller in _controllers.blocks)
-                {
+                foreach (IMyShipController _controller in _controllers.blocks) {
                     if (!_controller.IsWorking) continue;
                     if (firstWorking == null) firstWorking = _controller;
                     if (this._controller == null && _controller.IsUnderControl && _controller.CanControlShip) this._controller = _controller;
@@ -66,18 +59,15 @@ namespace IngameScript
                 }
                 if (_controller == null) _controller = firstWorking;
 
-                if (_controller == null)
-                {
+                if (_controller == null) {
                     throw new Exception("Missing Controller!");
                 }
             }
-            private void UpdateThrusterGroups()
-            {
+            private void UpdateThrusterGroups() {
                 if (_controller == null) return;
 
                 _ThrustGroups.ClearAll();
-                _Thrusters.FindBlocks(true, thruster =>
-                {
+                _Thrusters.FindBlocks(true, thruster => {
                     _ThrustGroups.Add(thruster, _controller);
                     return true;
                 });

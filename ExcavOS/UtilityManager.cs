@@ -17,12 +17,9 @@ using VRage.Game;
 using VRage;
 using VRageMath;
 
-namespace IngameScript
-{
-    partial class Program
-    {
-        public class UtilityManager
-        {
+namespace IngameScript {
+    partial class Program {
+        public class UtilityManager {
             private string sectionKey = "UtilMan";
             private Program _program;
             private Config _config;
@@ -55,8 +52,7 @@ namespace IngameScript
             public double HydrogenLevel = 0;
             public double UraniumLevel = 0;
 
-            public UtilityManager(Program program, Config config, CargoManager cargoManager, SystemManager systemManager, MyIni storage)
-            {
+            public UtilityManager(Program program, Config config, CargoManager cargoManager, SystemManager systemManager, MyIni storage) {
                 _program = program;
                 _config = config;
                 _storage = storage;
@@ -71,27 +67,23 @@ namespace IngameScript
                 Initialize();
             }
 
-            public void Save()
-            {
+            public void Save() {
                 _storage.Set(sectionKey, "GAP", GravityAlignPitch);
                 _storage.Set(sectionKey, "CruiseTarget", CruiseTarget);
             }
 
-            protected void Initialize()
-            {
+            protected void Initialize() {
                 GravityAlignPitch = (float)_storage.Get(sectionKey, "GAP").ToDouble(0);
                 CruiseTarget = (float)_storage.Get(sectionKey, "CruiseTarget").ToDouble(0);
             }
 
-            public void Update()
-            {
+            public void Update() {
                 _gyros.FindBlocks(true, null, _config.AlignGyrosGroupName);
                 _sorters.FindBlocks(true, null, _config.DumpSortersGroupName);
                 _controllers.FindBlocks(true, null);
                 _batteries.FindBlocks(true, null);
                 _reactors.FindBlocks(true, null);
-                _hydrogenTanks.FindBlocks(true, tank =>
-                {
+                _hydrogenTanks.FindBlocks(true, tank => {
                     return BlockHelper.IsHydrogenTank(tank);
                 });
                 CalculateCharge();
@@ -100,8 +92,7 @@ namespace IngameScript
 
                 IMyShipController controller = null;
                 IMyShipController firstWorking = null;
-                foreach (IMyShipController _controller in _controllers.blocks)
-                {
+                foreach (IMyShipController _controller in _controllers.blocks) {
                     if (!_controller.IsWorking) continue;
                     if (firstWorking == null) firstWorking = _controller;
                     if (controller == null && _controller.IsUnderControl && _controller.CanControlShip) controller = _controller;
@@ -109,33 +100,28 @@ namespace IngameScript
                 }
                 if (controller == null) controller = firstWorking;
 
-                if (controller == null)
-                {
+                if (controller == null) {
                     Status = "Missing controller";
                     return;
                 }
 
-                if (_gyros.Count() == 0)
-                {
+                if (_gyros.Count() == 0) {
                     Status = "Missing gyros";
                     return;
                 }
 
                 Status = "";
 
-                if (GravityAlign)
-                {
+                if (GravityAlign) {
                     _GravityAlignActive = true;
                     DoGravityAlign(controller, _gyros.blocks, GravityAlignPitch);
                 }
-                if (!GravityAlign && _GravityAlignActive)
-                {
+                if (!GravityAlign && _GravityAlignActive) {
                     _GravityAlignActive = false;
                     ReleaseGyros(_gyros.blocks);
                 }
 
-                if (CruiseEnabled)
-                {
+                if (CruiseEnabled) {
                     double currentSpeed = controller.GetShipSpeed();
 
                     var error = CruiseTarget - currentSpeed;
@@ -143,28 +129,22 @@ namespace IngameScript
                     float thrust = (float)_systemManager.ThrusterGroups.forward.maxThrust;
                     float maxAccel = thrust / mass;
 
-                    _systemManager.ThrusterGroups.forward.thrusters.ForEach(thruster =>
-                    {
-                        if (error > 0.1)
-                        {
+                    _systemManager.ThrusterGroups.forward.thrusters.ForEach(thruster => {
+                        if (error > 0.1) {
                             thruster.Enabled = true;
                             thruster.ThrustOverridePercentage = Math.Min(100, (float)error / CruiseTarget * 100 / maxAccel) * 0.1f;
                         }
-                        else
-                        {
+                        else {
                             thruster.Enabled = false;
                             thruster.ThrustOverridePercentage = 0f;
                         }
                     });
-                    _systemManager.ThrusterGroups.backward.thrusters.ForEach(thruster =>
-                    {
-                        if (error < -0.1)
-                        {
+                    _systemManager.ThrusterGroups.backward.thrusters.ForEach(thruster => {
+                        if (error < -0.1) {
                             thruster.Enabled = true;
                             thruster.ThrustOverridePercentage = Math.Min(100, (float)error / CruiseTarget * 100 / maxAccel) * 0.1f;
                         }
-                        else
-                        {
+                        else {
                             thruster.Enabled = false;
                             thruster.ThrustOverridePercentage = 0f;
                         }
@@ -172,81 +152,63 @@ namespace IngameScript
                 }
             }
 
-            public void SetSortersFilter(string item_id)
-            {
-                try
-                {
+            public void SetSortersFilter(string item_id) {
+                try {
                     List<MyInventoryItemFilter> currentList = new List<MyInventoryItemFilter>();
                     MyInventoryItemFilter item = new MyInventoryItemFilter("MyObjectBuilder_Ore/" + item_id);
-                    _sorters.ForEach(sorter =>
-                    {
+                    _sorters.ForEach(sorter => {
                         sorter.GetFilterList(currentList);
-                        if (currentList.Contains(item))
-                        {
+                        if (currentList.Contains(item)) {
                             currentList.Remove(item);
                         }
-                        else
-                        {
+                        else {
                             currentList.Add(item);
                         }
                         sorter.SetFilter(MyConveyorSorterMode.Whitelist, currentList);
                     });
                 }
-                catch (Exception)
-                {
+                catch (Exception) {
                 }
             }
 
-            public string GetSortersFilter()
-            {
-                if (_sorters.Count() == 0)
-                {
+            public string GetSortersFilter() {
+                if (_sorters.Count() == 0) {
                     return "No sorters";
                 }
 
                 string firstItem = "";
-                foreach (var sorter in _sorters.blocks)
-                {
+                foreach (var sorter in _sorters.blocks) {
                     sorter.GetFilterList(sorterList);
-                    if (sorterList.Count == 0)
-                    {
+                    if (sorterList.Count == 0) {
                         continue;
                     }
-                    if (sorterList.Count > 1)
-                    {
+                    if (sorterList.Count > 1) {
                         return "Multiple items";
                     }
-                    else
-                    {
-                        if (firstItem == "")
-                        {
+                    else {
+                        if (firstItem == "") {
                             firstItem = sorterList[0].ItemId.ToString();
                         }
-                        if (firstItem != sorterList[0].ItemId.ToString())
-                        {
+                        if (firstItem != sorterList[0].ItemId.ToString()) {
                             return "Multiple items";
                         }
                     }
                 }
-                if (firstItem == "")
-                {
+                if (firstItem == "") {
                     return "No filters";
                 }
                 return firstItem.Replace("MyObjectBuilder_Ore/", "");
             }
 
-            private void CalculateHydrogen()
-            {
-                if (_hydrogenTanks.Count() == 0)
-                {
+            private void CalculateHydrogen() {
+                if (_hydrogenTanks.Count() == 0) {
                     HydrogenCharge = "N/A";
                     HydrogenLevel = 0;
                     return;
                 }
                 double total = 0;
                 double capacity = 0;
-                _hydrogenTanks.ForEach(tank =>
-                {
+                _hydrogenTanks.ForEach(tank => {
                     total += tank.FilledRatio * tank.Capacity;
                     capacity += tank.Capacity;
                 });
@@ -254,15 +216,12 @@ namespace IngameScript
                 HydrogenCharge = string.Format("{0:0.0}%", (total / capacity) * 100);
             }
 
-            private void CalculateCharge()
-            {
+            private void CalculateCharge() {
                 float stored = 0;
                 float max = 0;
                 float delta = 0;
-                _batteries.ForEach(battery =>
-                {
-                    if (!battery.IsWorking)
-                    {
+                _batteries.ForEach(battery => {
+                    if (!battery.IsWorking) {
                         return;
                     }
 
@@ -271,35 +230,29 @@ namespace IngameScript
                     max += battery.MaxStoredPower;
                 });
 
-                if (max > 0)
-                {
+                if (max > 0) {
                     BatteryCharge = string.Format("{0:0.0}%", (stored / max) * 100);
                     BatteryLevel = stored / max;
                 }
-                else
-                {
+                else {
                     BatteryCharge = "N/A";
                     BatteryLevel = 0;
                 }
             }
 
-            private void CalculateUranium()
-            {
-                if (_reactors.Count() == 0)
-                {
+            private void CalculateUranium() {
+                if (_reactors.Count() == 0) {
                     //ReactorsCharge = "N/A";
                     UraniumLevel = 0;
                     return;
                 }
                 double total = 0;
-                _reactors.ForEach(reactor =>
-                {
+                _reactors.ForEach(reactor => {
                     total += BlockHelper.GetReactorFuelLevel(reactor);
                 });
                 UraniumLevel = total / _reactors.Count();
             }
-            private double DoGravityAlign(IMyShipController controller, List<IMyGyro> gyrosToUse, float pitch = 0f, bool onlyCalculate = false)
-            {
+            private double DoGravityAlign(IMyShipController controller, List<IMyGyro> gyrosToUse, float pitch = 0f, bool onlyCalculate = false) {
                 // Thanks to https://forum.keenswh.com/threads/aligning-ship-to-planet-gravity.7373513/#post-1286885461 
 
                 double coefficient = 0.9;
@@ -307,12 +260,10 @@ namespace IngameScript
                 controller.Orientation.GetMatrix(out orientation);
 
                 Vector3D down = orientation.Down;
-                if (pitch < 0)
-                {
+                if (pitch < 0) {
                     down = Vector3D.Lerp(orientation.Down, orientation.Forward, -pitch / 90);
                 }
-                else if (pitch > 0)
-                {
+                else if (pitch > 0) {
                     down = Vector3D.Lerp(orientation.Down, -orientation.Forward, pitch / 90);
                 }
 
@@ -324,8 +275,7 @@ namespace IngameScript
                 Vector3 mouse = new Vector3(controller.RotationIndicator * 0.1f, controller.RollIndicator * 9);
                 mouse *= _config.MouseSensitivity;
 
-                foreach (var gyro in gyrosToUse)
-                {
+                foreach (var gyro in gyrosToUse) {
                     gyro.Orientation.GetMatrix(out orientation);
                     var localDown = Vector3D.Transform(down, MatrixD.Transpose(orientation));
                     var localGrav = Vector3D.Transform(gravity, MatrixD.Transpose(gyro.WorldMatrix.GetOrientation()));
@@ -342,8 +292,7 @@ namespace IngameScript
                     }*/
                     offLevel += ang * 180.0 / 3.14;
 
-                    if (!onlyCalculate)
-                    {
+                    if (!onlyCalculate) {
                         double controlVelocity = gyro.GetMaximum<float>("Yaw") * (ang / Math.PI) * coefficient;
                         controlVelocity = Math.Min(gyro.GetMaximum<float>("Yaw"), controlVelocity);
                         controlVelocity = Math.Max(0.01, controlVelocity); //Gyros don't work well at very low speeds
@@ -356,16 +305,13 @@ namespace IngameScript
                         gyro.GyroOverride = true;
                     }
                 }
-                if (gyrosToUse.Count() == 0)
-                {
+                if (gyrosToUse.Count() == 0) {
                     return -1000;
                 }
                 return offLevel / gyrosToUse.Count();
             }
-            private void ReleaseGyros(List<IMyGyro> gyros)
-            {
-                foreach (IMyGyro gyro in gyros)
-                {
+            private void ReleaseGyros(List<IMyGyro> gyros) {
+                foreach (IMyGyro gyro in gyros) {
                     gyro.SetValueFloat("Pitch", 0f);
                     gyro.SetValueFloat("Yaw", 0f);
                     gyro.SetValueFloat("Roll", 0f);

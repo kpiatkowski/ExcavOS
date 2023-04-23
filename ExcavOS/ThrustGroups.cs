@@ -18,13 +18,10 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace IngameScript
-{
-    partial class Program
-    {
+namespace IngameScript {
+    partial class Program {
 
-        public class ThrustGroups
-        {
+        public class ThrustGroups {
             public ThrustGroup up = new ThrustGroup();
             public ThrustGroup down = new ThrustGroup();
             public ThrustGroup left = new ThrustGroup();
@@ -34,8 +31,7 @@ namespace IngameScript
 
             public List<ThrustGroup> groups;
 
-            public ThrustGroups()
-            {
+            public ThrustGroups() {
                 groups = new List<ThrustGroup>();
                 groups.Add(up);
                 groups.Add(down);
@@ -45,8 +41,7 @@ namespace IngameScript
                 groups.Add(backward);
             }
 
-            public void Add(IMyThrust thruster, IMyShipController controller)
-            {
+            public void Add(IMyThrust thruster, IMyShipController controller) {
                 if (!thruster.IsFunctional) return;
                 var dir = thruster.WorldMatrix.Backward;
                 var forwardDot = Vector3D.Dot(dir, controller.WorldMatrix.Forward);
@@ -60,8 +55,7 @@ namespace IngameScript
                 else if (upDot >= 0.9) up.thrusters.Add(thruster);
                 else if (upDot <= -0.9) down.thrusters.Add(thruster);
             }
-            public void ClearAll()
-            {
+            public void ClearAll() {
                 up.thrusters.Clear();
                 down.thrusters.Clear();
                 left.thrusters.Clear();
@@ -70,8 +64,7 @@ namespace IngameScript
                 backward.thrusters.Clear();
             }
 
-            public void UpdateAll()
-            {
+            public void UpdateAll() {
                 up.Update();
                 down.Update();
                 left.Update();
@@ -80,35 +73,28 @@ namespace IngameScript
                 backward.Update();
             }
 
-            public double AccelerationInDirection(Vector3D direction, Vector3D gravity, double mass)
-            {
+            public double AccelerationInDirection(Vector3D direction, Vector3D gravity, double mass) {
                 double totalAccel = 0;
-                groups.ForEach(group =>
-                {
-                    if (Vector3D.Dot(group.direction, direction) < -0.01)
-                    {
+                groups.ForEach(group => {
+                    if (Vector3D.Dot(group.direction, direction) < -0.01) {
                         totalAccel += group.AccelerationInDirection(direction, gravity, mass);
                     }
                 });
                 return totalAccel;
             }
         }
-        public class ThrustGroup
-        {
+        public class ThrustGroup {
             public List<IMyThrust> thrusters = new List<IMyThrust>();
             public double maxThrust;
             public bool allWorking = false;
             public Vector3D direction;
 
-            public void Update()
-            {
+            public void Update() {
 
                 maxThrust = 0;
                 allWorking = true;
-                foreach (IMyThrust thrust in thrusters)
-                {
-                    if (!thrust.IsWorking)
-                    {
+                foreach (IMyThrust thrust in thrusters) {
+                    if (!thrust.IsWorking) {
                         allWorking = false;
                         continue;
                     }
@@ -117,17 +103,14 @@ namespace IngameScript
                 if (thrusters.Count <= 0) return;
                 direction = thrusters[0].WorldMatrix.Backward;
             }
-            public double AccelerationInDirection(Vector3D direction, Vector3D gravity, double mass)
-            {
+            public double AccelerationInDirection(Vector3D direction, Vector3D gravity, double mass) {
 
-                if (!Vector3D.IsUnit(ref direction))
-                {
+                if (!Vector3D.IsUnit(ref direction)) {
                     direction = Vector3D.Normalize(direction);
                 }
 
                 double effectiveThrust = 0;
-                foreach (IMyThrust thrust in thrusters)
-                {
+                foreach (IMyThrust thrust in thrusters) {
                     effectiveThrust += Vector3D.Dot(direction, thrust.WorldMatrix.Backward) * thrust.MaxEffectiveThrust;
                 }
                 double effectiveAcceleration = effectiveThrust / mass;

@@ -17,24 +17,19 @@ using VRage.Game;
 using VRage;
 using VRageMath;
 
-namespace IngameScript
-{
-    partial class Program
-    {
-        public class Config : ScriptConfig
-        {
+namespace IngameScript {
+    partial class Program {
+        public class Config : ScriptConfig {
             public string CargoTrackGroupName = "";
             public string AlignGyrosGroupName = "";
             public string DumpSortersGroupName = "";
             public float LiftThresholdWarning = 0.9f;
             public float MouseSensitivity = 1f;
 
-            public Config(MyIni ini, string section) : base(ini, section)
-            {
+            public Config(MyIni ini, string section) : base(ini, section) {
             }
 
-            public override void SetupDefaults()
-            {
+            public override void SetupDefaults() {
                 _ini.Set(_section, "CargoTrackGroupName", CargoTrackGroupName);
                 _ini.Set(_section, "AlignGyrosGroupName", AlignGyrosGroupName);
                 _ini.Set(_section, "DumpSortersGroupName", DumpSortersGroupName);
@@ -42,8 +37,7 @@ namespace IngameScript
                 _ini.Set(_section, "LiftThresholdWarning", LiftThresholdWarning);
             }
 
-            public override void ReadConfig()
-            {
+            public override void ReadConfig() {
                 CargoTrackGroupName = GetValue("CargoTrackGroupName").ToString(CargoTrackGroupName);
                 AlignGyrosGroupName = GetValue("AlignGyrosGroupName").ToString(AlignGyrosGroupName);
                 DumpSortersGroupName = GetValue("DumpSortersGroupName").ToString(DumpSortersGroupName);
