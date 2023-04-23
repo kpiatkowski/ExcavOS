@@ -25,7 +25,7 @@ namespace IngameScript
         public class WeightScreen : ScreenHandler<ExcavOSContext>
         {
             public new const string SCREEN_NAME = "Weight";
- 
+
             public WeightScreen(ExcavOSContext context) : base(context)
             {
 
@@ -38,13 +38,13 @@ namespace IngameScript
                 {
                     Painter.SetCurrentSurfaceAndFrame(surface, frame);
 
-                    bool roverMode = _context._systemmanager.LiftThrusters.Count == 0;
-                    float liftUsage = _context._weightAnalizer.LiftThrustAvailable;
+                    bool roverMode = _context._systemmanager.ThrusterGroups.down.thrusters.Count == 0;
+                    float liftUsage = _context._weightAnalizer.LiftThrustUsage;
                     float cargoUsage = (float)(_context._cargoManager.CurrentCapacity / _context._cargoManager.TotalCapacity);
                     float margin = 20.0f;
                     float max = Math.Min(Painter.AvailableSize.X, Painter.AvailableSize.Y);
                     bool shortMode = max < Painter.AvailableSize.X;
-                    
+
                     if (roverMode)
                     {
                         Vector2 position = new Vector2((Painter.AvailableSize.X - max) / 2.0f + margin, margin);
@@ -57,7 +57,8 @@ namespace IngameScript
                         }
                         Painter.FullRadial(position, size, cargoUsage, subText, 60);
 
-                    } else
+                    }
+                    else
                     {
                         Vector2 position = new Vector2((Painter.AvailableSize.X - max) / 2.0f + margin, margin / 2.0f);
                         Vector2 size = new Vector2(max - margin * 2, max / 2.0f - margin);

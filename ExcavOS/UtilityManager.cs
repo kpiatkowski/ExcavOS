@@ -38,7 +38,7 @@ namespace IngameScript
             private readonly BlockFinder<IMyGasTank> _hydrogenTanks;
             private readonly BlockFinder<IMyReactor> _reactors;
             private readonly List<MyInventoryItemFilter> sorterList = new List<MyInventoryItemFilter>();
-            public readonly PIDController thrustPID = new PIDController(1.0 / 60.0);
+            //public readonly PIDController thrustPID = new PIDController(1.0 / 60.0);
 
             private const double ThrustKp = 0.5;
             private const double ThrustTi = 0.1;
@@ -68,18 +68,17 @@ namespace IngameScript
                 _batteries = new BlockFinder<IMyBatteryBlock>(_program);
                 _hydrogenTanks = new BlockFinder<IMyGasTank>(_program);
                 _reactors = new BlockFinder<IMyReactor>(_program);
-                thrustPID.Kp = ThrustKp;
-                thrustPID.Ti = ThrustTi;
-                thrustPID.Td = ThrustTd;
                 Initialize();
             }
 
-            public void Save() {
+            public void Save()
+            {
                 _storage.Set(sectionKey, "GAP", GravityAlignPitch);
                 _storage.Set(sectionKey, "CruiseTarget", CruiseTarget);
             }
 
-            protected void Initialize() {
+            protected void Initialize()
+            {
                 GravityAlignPitch = (float)_storage.Get(sectionKey, "GAP").ToDouble(0);
                 CruiseTarget = (float)_storage.Get(sectionKey, "CruiseTarget").ToDouble(0);
             }
@@ -91,7 +90,8 @@ namespace IngameScript
                 _controllers.FindBlocks(true, null);
                 _batteries.FindBlocks(true, null);
                 _reactors.FindBlocks(true, null);
-                _hydrogenTanks.FindBlocks(true, tank => {
+                _hydrogenTanks.FindBlocks(true, tank =>
+                {
                     return BlockHelper.IsHydrogenTank(tank);
                 });
                 CalculateCharge();
@@ -100,7 +100,8 @@ namespace IngameScript
 
                 IMyShipController controller = null;
                 IMyShipController firstWorking = null;
-                foreach ( IMyShipController _controller in _controllers.blocks) {
+                foreach (IMyShipController _controller in _controllers.blocks)
+                {
                     if (!_controller.IsWorking) continue;
                     if (firstWorking == null) firstWorking = _controller;
                     if (controller == null && _controller.IsUnderControl && _controller.CanControlShip) controller = _controller;
@@ -125,9 +126,11 @@ namespace IngameScript
                 if (GravityAlign)
                 {
                     _GravityAlignActive = true;
-                    DoGravityAlign(controller, _gyros.blocks,GravityAlignPitch);
+                    DoGravityAlign(controller, _gyros.blocks, GravityAlignPitch);
                 }
-                if(!GravityAlign && _GravityAlignActive) {
+                if (!GravityAlign && _GravityAlignActive)
+                {
+                    _GravityAlignActive = false;
                     ReleaseGyros(_gyros.blocks);
                 }
 
@@ -136,42 +139,36 @@ namespace IngameScript
                     double currentSpeed = controller.GetShipSpeed();
 
                     var error = CruiseTarget - currentSpeed;
-                    var force = thrustPID.Compute(error);
-                    _systemManager.CruiseThrusters.ForEach(thruster =>
+                    float mass = _systemManager.ActiveController.CalculateShipMass().PhysicalMass;
+                    float thrust = (float)_systemManager.ThrusterGroups.forward.maxThrust;
+                    float maxAccel = thrust / mass;
+
+                    _systemManager.ThrusterGroups.forward.thrusters.ForEach(thruster =>
                     {
-                        if (Math.Abs(error) < 0.02f * CruiseTarget)
-                        {
-                            thruster.ThrustOverridePercentage = 0.0f;
-                        } else if (force > 0.0)
+                        if (error > 0.1)
                         {
                             thruster.Enabled = true;
-                            thruster.ThrustOverridePercentage = (float)force * 0.1f;                            
-                        } else
-                        {
-                            thruster.ThrustOverridePercentage = 0.0f;
-                            thruster.Enabled = false;
-                        }
-                    });
-
-                    _systemManager.CruiseReverseThrusters.ForEach(thruster =>
-                    {
-                        if (Math.Abs(error) < 0.02f * CruiseTarget)
-                        {
-                            thruster.ThrustOverridePercentage = 0.0f;
-                            thruster.Enabled = false;
-                        }
-                        else if (force > 0.0)
-                        {
-                            thruster.ThrustOverridePercentage = 0.0f;
-                            thruster.Enabled = false;
+                            thruster.ThrustOverridePercentage = Math.Min(100, (float)error / CruiseTarget * 100 / maxAccel) * 0.1f;
                         }
                         else
                         {
-                            thruster.Enabled = true;
-                            thruster.ThrustOverridePercentage = -(float)force * 0.1f;
+                            thruster.Enabled = false;
+                            thruster.ThrustOverridePercentage = 0f;
                         }
                     });
-
+                    _systemManager.ThrusterGroups.backward.thrusters.ForEach(thruster =>
+                    {
+                        if (error < -0.1)
+                        {
+                            thruster.Enabled = true;
+                            thruster.ThrustOverridePercentage = Math.Min(100, (float)error / CruiseTarget * 100 / maxAccel) * 0.1f;
+                        }
+                        else
+                        {
+                            thruster.Enabled = false;
+                            thruster.ThrustOverridePercentage = 0f;
+                        }
+                    });
                 }
             }
 
@@ -187,7 +184,8 @@ namespace IngameScript
                         if (currentList.Contains(item))
                         {
                             currentList.Remove(item);
-                        } else
+                        }
+                        else
                         {
                             currentList.Add(item);
                         }
@@ -277,7 +275,8 @@ namespace IngameScript
                 {
                     BatteryCharge = string.Format("{0:0.0}%", (stored / max) * 100);
                     BatteryLevel = stored / max;
-                } else
+                }
+                else
                 {
                     BatteryCharge = "N/A";
                     BatteryLevel = 0;
@@ -363,8 +362,10 @@ namespace IngameScript
                 }
                 return offLevel / gyrosToUse.Count();
             }
-            private void ReleaseGyros(List<IMyGyro> gyros) {
-                foreach (IMyGyro gyro in gyros) {
+            private void ReleaseGyros(List<IMyGyro> gyros)
+            {
+                foreach (IMyGyro gyro in gyros)
+                {
                     gyro.SetValueFloat("Pitch", 0f);
                     gyro.SetValueFloat("Yaw", 0f);
                     gyro.SetValueFloat("Roll", 0f);

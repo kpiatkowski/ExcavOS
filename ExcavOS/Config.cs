@@ -23,9 +23,6 @@ namespace IngameScript
     {
         public class Config : ScriptConfig
         {
-
-            public string LiftThrustersGroupName = "";
-            public string StopThrustersGroupName = "";
             public string CargoTrackGroupName = "";
             public string AlignGyrosGroupName = "";
             public string DumpSortersGroupName = "";
@@ -38,8 +35,6 @@ namespace IngameScript
 
             public override void SetupDefaults()
             {
-                _ini.Set(_section, "LiftThrustersGroupName", LiftThrustersGroupName);
-                _ini.Set(_section, "StopThrustersGroupName", StopThrustersGroupName);
                 _ini.Set(_section, "CargoTrackGroupName", CargoTrackGroupName);
                 _ini.Set(_section, "AlignGyrosGroupName", AlignGyrosGroupName);
                 _ini.Set(_section, "DumpSortersGroupName", DumpSortersGroupName);
@@ -49,8 +44,6 @@ namespace IngameScript
 
             public override void ReadConfig()
             {
-                LiftThrustersGroupName = GetValue("LiftThrustersGroupName").ToString(LiftThrustersGroupName);
-                StopThrustersGroupName = GetValue("StopThrustersGroupName").ToString(StopThrustersGroupName);
                 CargoTrackGroupName = GetValue("CargoTrackGroupName").ToString(CargoTrackGroupName);
                 AlignGyrosGroupName = GetValue("AlignGyrosGroupName").ToString(AlignGyrosGroupName);
                 DumpSortersGroupName = GetValue("DumpSortersGroupName").ToString(DumpSortersGroupName);

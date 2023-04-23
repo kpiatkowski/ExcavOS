@@ -33,7 +33,6 @@ namespace IngameScript
             public WeightAnalizer _weightAnalizer;
             public UtilityManager _utilitymanager;
             public SystemManager _systemmanager;
-
             public int tick;
 
             public ExcavOSContext(Program program, Config config, MyIni storage)
@@ -47,7 +46,8 @@ namespace IngameScript
                 _utilitymanager = new UtilityManager(_program, _config, _cargoManager, _systemmanager, _storage);
             }
 
-            public void Save() {
+            public void Save()
+            {
                 _utilitymanager.Save();
             }
 
@@ -64,33 +64,30 @@ namespace IngameScript
             public void HandleCommand(string argument)
             {
                 string[] args = argument.Split(' ');
-                switch (args[0].ToLower()) {
+                switch (args[0].ToLower())
+                {
                     case "toggle_gaa":
                         _utilitymanager.GravityAlign = !_utilitymanager.GravityAlign;
                         break;
                     case "set_gaa_pitch":
                         char modifier = args[1][0];
                         float pitch = float.Parse(args[1]);
-                        if (modifier.ToString() == "+" || modifier.ToString() == "-") {
+                        if (modifier.ToString() == "+" || modifier.ToString() == "-")
+                        {
                             _utilitymanager.GravityAlignPitch += pitch;
                         }
-                        else if (!float.IsNaN(pitch)) {
+                        else if (!float.IsNaN(pitch))
+                        {
                             _utilitymanager.GravityAlignPitch = pitch;
                         }
                         _utilitymanager.GravityAlignPitch = MathHelper.Clamp(_utilitymanager.GravityAlignPitch, -90, 90);
                         break;
                     case "toggle_cruise":
                         _utilitymanager.CruiseEnabled = !_utilitymanager.CruiseEnabled;
-                        if (_utilitymanager.CruiseEnabled)
+                        if (!_utilitymanager.CruiseEnabled)
                         {
-                            _utilitymanager.thrustPID.Reset();
-                        } else
-                        {
-                            _systemmanager.CruiseThrusters.ForEach(thruster => thruster.ThrustOverridePercentage = 0.0f);
-                            _systemmanager.CruiseReverseThrusters.ForEach(thruster => {
-                                thruster.ThrustOverridePercentage = 0.0f;
-                                thruster.Enabled = true;
-                            });
+                            _systemmanager.ThrusterGroups.forward.thrusters.ForEach(thruster => { thruster.ThrustOverridePercentage = 0.0f; thruster.Enabled = true; });
+                            _systemmanager.ThrusterGroups.backward.thrusters.ForEach(thruster => { thruster.ThrustOverridePercentage = 0.0f; thruster.Enabled = true; });
                         }
                         break;
                     case "set_cruise":
@@ -103,7 +100,7 @@ namespace IngameScript
                         else if (!float.IsNaN(speed))
                         {
                             _utilitymanager.CruiseTarget = speed;
-                        }                        
+                        }
                         break;
                     case "dump":
                         _utilitymanager.SetSortersFilter(args[1]);

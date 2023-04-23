@@ -39,7 +39,7 @@
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
     <Compile Include="CargoManager.cs" />
-    <Compile Include="PIDController.cs" />
+    <Compile Include="ThrustGroups.cs" />
     <Compile Include="SystemManager.cs" />
     <Compile Include="Common\BlockFinder.cs" />
     <Compile Include="Common\BlockHelper.cs" />
@@ -74,6 +74,11 @@
     <Compile Include="Screens\WeightScreen.cs" />
     <Compile Include="UtilityManager.cs" />
     <Compile Include="WeightAnalizer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.editorconfig">
+      <Link>.editorconfig</Link>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="AfterBuild">

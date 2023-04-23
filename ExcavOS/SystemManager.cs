@@ -17,9 +17,12 @@ using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
 
-namespace IngameScript {
-    partial class Program {
-        public class SystemManager {
+namespace IngameScript
+{
+    partial class Program
+    {
+        public class SystemManager
+        {
 
             public string Status;
             private Program _program;
@@ -29,36 +32,33 @@ namespace IngameScript {
             private readonly BlockFinder<IMyShipController> _controllers;
             private IMyShipController _controller;
 
-            private readonly BlockFinder<IMyThrust> _liftThrusters;
-            private readonly BlockFinder<IMyThrust> _cruiseThrusters;
-            private readonly BlockFinder<IMyThrust> _cruiseReverseThrusters;
-            private readonly BlockFinder<IMyThrust> _stopThrusters;
+            private readonly BlockFinder<IMyThrust> _Thrusters;
+            private readonly ThrustGroups _ThrustGroups;
 
             public IMyShipController ActiveController { get { return _controller; } }
-            public List<IMyThrust> LiftThrusters { get { return _liftThrusters.blocks; } }
-            public List<IMyThrust> StopThrusters { get { return _stopThrusters.blocks; } }
-            public List<IMyThrust> CruiseThrusters { get { return _cruiseThrusters.blocks; } }
-            public List<IMyThrust> CruiseReverseThrusters { get { return _cruiseReverseThrusters.blocks; } }
-
-            public SystemManager(Program program, Config config) {
+            public List<IMyThrust> Thrusters { get { return _Thrusters.blocks; } }
+            public ThrustGroups ThrusterGroups { get { return _ThrustGroups; } }
+            public SystemManager(Program program, Config config)
+            {
                 _program = program;
                 _config = config;
                 _gyros = new BlockFinder<IMyGyro>(_program);
                 _controllers = new BlockFinder<IMyShipController>(_program);
-                _liftThrusters = new BlockFinder<IMyThrust>(_program);
-                _stopThrusters = new BlockFinder<IMyThrust>(_program);
-                _cruiseThrusters = new BlockFinder<IMyThrust>(_program);
-                _cruiseReverseThrusters = new BlockFinder<IMyThrust>(_program);
+                _Thrusters = new BlockFinder<IMyThrust>(_program);
+                _ThrustGroups = new ThrustGroups();
             }
 
-            public void Update() {
+            public void Update()
+            {
                 UpdateController();
                 UpdateThrusterGroups();
             }
-            private void UpdateController() {
+            private void UpdateController()
+            {
                 IMyShipController firstWorking = null;
                 _controllers.FindBlocks(true, null, "");
-                foreach (IMyShipController _controller in _controllers.blocks) {
+                foreach (IMyShipController _controller in _controllers.blocks)
+                {
                     if (!_controller.IsWorking) continue;
                     if (firstWorking == null) firstWorking = _controller;
                     if (this._controller == null && _controller.IsUnderControl && _controller.CanControlShip) this._controller = _controller;
@@ -66,52 +66,22 @@ namespace IngameScript {
                 }
                 if (_controller == null) _controller = firstWorking;
 
-                if (_controller == null) {
+                if (_controller == null)
+                {
                     throw new Exception("Missing Controller!");
                 }
             }
-            private void UpdateThrusterGroups() {
+            private void UpdateThrusterGroups()
+            {
                 if (_controller == null) return;
-                if (_config.LiftThrustersGroupName != "") {
-                    _liftThrusters.FindBlocks(true, null, _config.LiftThrustersGroupName);
-                }
-                else {
-                    _liftThrusters.FindBlocks(true, thruster => {
-                        Vector3D thrusterDirection = -thruster.WorldMatrix.Forward;
-                        //double forwardDot = Vector3D.Dot(thrusterDirection, _controller.WorldMatrix.Forward);
-                        double upDot = Vector3D.Dot(thrusterDirection, -Vector3.Normalize(_controller.GetTotalGravity()));
-                        //double leftDot = Vector3D.Dot(thrusterDirection, _controller.WorldMatrix.Left);
 
-                        if (upDot >= 0.2) {
-                            return true;
-                        }
-                        return false;
-                    });
-                }
-                if (_config.StopThrustersGroupName != "") {
-                    _stopThrusters.FindBlocks(true, null, _config.StopThrustersGroupName);
-                }
-                else {
-                    _stopThrusters.FindBlocks(true, thruster => {
-                        Vector3D thrusterDirection = -thruster.WorldMatrix.Forward;
-                        double forwardDot = Vector3D.Dot(thrusterDirection, _controller.GetShipVelocities().LinearVelocity);
-                        //double upDot = Vector3D.Dot(thrusterDirection, _controller.WorldMatrix.Up);
-                        //double leftDot = Vector3D.Dot(thrusterDirection, _controller.WorldMatrix.Left);
-
-                        if (forwardDot <= -0.7) {
-                            return true;
-                        }
-                        return false;
-                    });
-                }
-                _cruiseThrusters.FindBlocks(true, thruster => {
-                    var facing = thruster.Orientation.TransformDirection(Base6Directions.Direction.Forward);
-                    return facing == Base6Directions.Direction.Backward;
+                _ThrustGroups.ClearAll();
+                _Thrusters.FindBlocks(true, thruster =>
+                {
+                    _ThrustGroups.Add(thruster, _controller);
+                    return true;
                 });
-                _cruiseReverseThrusters.FindBlocks(true, thruster => {
-                    var facing = thruster.Orientation.TransformDirection(Base6Directions.Direction.Forward);
-                    return facing == Base6Directions.Direction.Forward;
-                });
+                _ThrustGroups.UpdateAll();
             }
         }
     }

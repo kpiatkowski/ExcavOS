@@ -1,5 +1,4 @@
-﻿using Sandbox.Game.EntityComponents;
-using Sandbox.ModAPI.Ingame;
+﻿using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using System.Collections.Generic;
@@ -16,10 +15,11 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRage;
 using VRageMath;
+using static IngameScript.Program.ThrustGroups;
 
 namespace IngameScript
 {
-    partial class Program
+    internal partial class Program
     {
         public class WeightAnalizer
         {
@@ -28,9 +28,8 @@ namespace IngameScript
             public string Status;
             private CargoManager _cargoManager;
             private SystemManager _systemManager;
-            
-            public float LiftThrustNeeded;
-            public float LiftThrustAvailable;
+
+            public float LiftThrustUsage;
             public float StoppingDistance;
             public float StoppingTime;
             public float CapacityDelta;
@@ -76,72 +75,52 @@ namespace IngameScript
                 if (_systemManager.ActiveController.CalculateShipMass().PhysicalMass == 0)
                 {
                     Status = "Grid is static";
-                    LiftThrustNeeded = 0;
-                    LiftThrustAvailable = 0;
-                    StoppingTime = 0;
-                    StoppingDistance = 0;
-                    return;
                 }
+                else
+                {
+                    Status = "";
+                }
+                float mass = _systemManager.ActiveController.CalculateShipMass().PhysicalMass;
+                Vector3D direction = _systemManager.ActiveController.GetShipVelocities().LinearVelocity.Normalized();
+                Vector3D gravity = _systemManager.ActiveController.GetNaturalGravity();
+                double speed = _systemManager.ActiveController.GetShipSpeed();
 
-                Status = "";
-                CalculateLiftThrustUsage(_systemManager.ActiveController, _systemManager.LiftThrusters);
-                CalculateStopDistance(_systemManager.ActiveController, _systemManager.StopThrusters);
+                _systemManager.ThrusterGroups.UpdateAll();
+                LiftThrustUsage = (float)CalculateLiftThrustUsage(_systemManager.ActiveController, _systemManager.ThrusterGroups);
+                CalculateStopDistance(speed, direction, gravity, mass, _systemManager.ThrusterGroups);
             }
 
-            private void CalculateLiftThrustUsage(IMyShipController controller, List<IMyThrust> thrusters)
+            private double CalculateLiftThrustUsage(IMyShipController controller, ThrustGroups thrusterGroups)
             {
-                /*
+                double ThrustUsage = 0;
                 float mass = controller.CalculateShipMass().PhysicalMass;
-                float gravityStrength = (float)(controller.GetNaturalGravity().Length() / 9.81);                
-                LiftThrustNeeded = (mass * (float)gravityStrength / 100) * 1000;
-
-                Vector3 gravity = controller.GetNaturalGravity();
-
-
-                LiftThrustAvailable = 0;
-                thrusters.ForEach(thruster =>
+                Vector3D gravity = controller.GetNaturalGravity();
+                double gravitationalForce = mass * gravity.Length();
+                foreach (ThrustGroup thrustGroup in thrusterGroups.groups)
                 {
-                    if (thruster.IsWorking)
+                    var GravAccel = Vector3D.Dot(gravity, thrustGroup.direction);
+                    if (GravAccel > 0) continue;
+
+
+                    double maxAcceleration = thrustGroup.maxThrust / mass;
+                    double effectiveAcceleration = maxAcceleration + GravAccel;
+
+                    float requiredThrust = 1 - (float)(effectiveAcceleration / maxAcceleration);
+
+                    if (ThrustUsage < requiredThrust)
                     {
-                        Vector3D thrusterDirection = thruster.WorldMatrix.Forward;
-                        double upDot = Vector3D.Dot(thrusterDirection, Vector3.Normalize(gravity));
-                        LiftThrustAvailable += (thruster.MaxEffectiveThrust*(float)upDot);
+                        ThrustUsage = requiredThrust;
                     }
-                });
-                */
-                LiftThrustNeeded = 0;
-                thrusters.ForEach(thruster =>
-                {
-                    if (thruster.IsWorking)
-                    {
-                        if (thruster.CurrentThrustPercentage > LiftThrustNeeded)
-                        {
-                            LiftThrustNeeded = thruster.CurrentThrustPercentage;
-                        }
-                    }
-                });
-                LiftThrustNeeded *= 0.01f;
-                LiftThrustAvailable = (float)MathHelper.Lerp(LiftThrustAvailable, LiftThrustNeeded, 0.5);
+                }
+                return ThrustUsage;
             }
 
-            private void CalculateStopDistance(IMyShipController controller, List<IMyThrust> thrusters) 
+            private void CalculateStopDistance(double CurrentSpeed, Vector3D Direction, Vector3D Gravity, Double Mass, ThrustGroups thrustGroups)
             {
-                float mass = controller.CalculateShipMass().PhysicalMass;
-                double stopThrustAvailable = 0;
-                int disabledThrusters = 0;
-                thrusters.ForEach(thruster =>
-                {
-                    if (!thruster.IsWorking) disabledThrusters++;
-                    if (thruster.IsFunctional)
-                    {
-                        stopThrustAvailable += thruster.MaxEffectiveThrust;
-                    }
-                });
-                StopThrustersWarning = disabledThrusters > 0;
-                double deacceleration = -stopThrustAvailable / mass;
-                double currentSpeed = controller.GetShipSpeed();
-                StoppingTime = (float)(-currentSpeed / deacceleration);
-                StoppingDistance = (float)(currentSpeed * StoppingTime + (deacceleration * StoppingTime * StoppingTime) / 2.0f);
+
+                double effectiveAcceleration = thrustGroups.AccelerationInDirection(Direction, Gravity, Mass);
+                StoppingTime = (float)(-CurrentSpeed / effectiveAcceleration);
+                StoppingDistance = (float)(CurrentSpeed * StoppingTime + (effectiveAcceleration * StoppingTime * StoppingTime) / 2.0f);
             }
 
             private void CalculateCapacityDelta(TimeSpan time)
