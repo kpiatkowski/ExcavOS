@@ -21,13 +21,8 @@ namespace IngameScript {
     partial class Program {
         public class UtilityManager {
             private string sectionKey = "UtilMan";
-            private Program _program;
-            private Config _config;
-            private MyIni _storage;
+            private readonly ExcavOSContext _context;
             public string Status;
-            private CargoManager _cargoManager;
-            private SystemManager _systemManager;
-
             private readonly BlockFinder<IMyGyro> _gyros;
             private readonly BlockFinder<IMyShipController> _controllers;
             private readonly BlockFinder<IMyConveyorSorter> _sorters;
@@ -35,13 +30,9 @@ namespace IngameScript {
             private readonly BlockFinder<IMyGasTank> _hydrogenTanks;
             private readonly BlockFinder<IMyReactor> _reactors;
             private readonly List<MyInventoryItemFilter> sorterList = new List<MyInventoryItemFilter>();
-            //public readonly PIDController thrustPID = new PIDController(1.0 / 60.0);
-
-            private const double ThrustKp = 0.5;
-            private const double ThrustTi = 0.1;
-            private const double ThrustTd = 0.0;
 
             public bool GravityAlign = false;
+            public bool GravityArtificial = false;
             public bool CruiseEnabled = false;
             private bool _GravityAlignActive = false;
             public float GravityAlignPitch = 0;
@@ -52,34 +43,31 @@ namespace IngameScript {
             public double HydrogenLevel = 0;
             public double UraniumLevel = 0;
 
-            public UtilityManager(Program program, Config config, CargoManager cargoManager, SystemManager systemManager, MyIni storage) {
-                _program = program;
-                _config = config;
-                _storage = storage;
-                _cargoManager = cargoManager;
-                _systemManager = systemManager;
-                _gyros = new BlockFinder<IMyGyro>(_program);
-                _sorters = new BlockFinder<IMyConveyorSorter>(_program);
-                _controllers = new BlockFinder<IMyShipController>(_program);
-                _batteries = new BlockFinder<IMyBatteryBlock>(_program);
-                _hydrogenTanks = new BlockFinder<IMyGasTank>(_program);
-                _reactors = new BlockFinder<IMyReactor>(_program);
+            public UtilityManager(ExcavOSContext context) {
+                _context = context;
+                _gyros = new BlockFinder<IMyGyro>(_context);
+                _sorters = new BlockFinder<IMyConveyorSorter>(_context);
+                _controllers = new BlockFinder<IMyShipController>(_context);
+                _batteries = new BlockFinder<IMyBatteryBlock>(_context);
+                _hydrogenTanks = new BlockFinder<IMyGasTank>(_context);
+                _reactors = new BlockFinder<IMyReactor>(_context);
+
                 Initialize();
             }
 
             public void Save() {
-                _storage.Set(sectionKey, "GAP", GravityAlignPitch);
-                _storage.Set(sectionKey, "CruiseTarget", CruiseTarget);
+                _context.storage.Set(sectionKey, "GAP", GravityAlignPitch);
+                _context.storage.Set(sectionKey, "CruiseTarget", CruiseTarget);
             }
 
             protected void Initialize() {
-                GravityAlignPitch = (float)_storage.Get(sectionKey, "GAP").ToDouble(0);
-                CruiseTarget = (float)_storage.Get(sectionKey, "CruiseTarget").ToDouble(0);
+                GravityAlignPitch = (float)_context.storage.Get(sectionKey, "GAP").ToDouble(0);
+                CruiseTarget = (float)_context.storage.Get(sectionKey, "CruiseTarget").ToDouble(0);
             }
 
             public void Update() {
-                _gyros.FindBlocks(true, null, _config.AlignGyrosGroupName);
-                _sorters.FindBlocks(true, null, _config.DumpSortersGroupName);
+                _gyros.FindBlocks(true, null, _context.config.AlignGyrosGroupName);
+                _sorters.FindBlocks(true, null, _context.config.DumpSortersGroupName);
                 _controllers.FindBlocks(true, null);
                 _batteries.FindBlocks(true, null);
                 _reactors.FindBlocks(true, null);
@@ -125,11 +113,11 @@ namespace IngameScript {
                     double currentSpeed = controller.GetShipSpeed();
 
                     var error = CruiseTarget - currentSpeed;
-                    float mass = _systemManager.ActiveController.CalculateShipMass().PhysicalMass;
-                    float thrust = (float)_systemManager.ThrusterGroups.forward.maxThrust;
+                    float mass = _context.systemManager.ActiveController.CalculateShipMass().PhysicalMass;
+                    float thrust = (float)_context.thrusterManager.forward.maxThrust;
                     float maxAccel = thrust / mass;
 
-                    _systemManager.ThrusterGroups.forward.thrusters.ForEach(thruster => {
+                    _context.thrusterManager.forward.thrusters.ForEach(thruster => {
                         if (error > 0.1) {
                             thruster.Enabled = true;
                             thruster.ThrustOverridePercentage = Math.Min(100, (float)error / CruiseTarget * 100 / maxAccel) * 0.1f;
@@ -139,7 +127,7 @@ namespace IngameScript {
                             thruster.ThrustOverridePercentage = 0f;
                         }
                     });
-                    _systemManager.ThrusterGroups.backward.thrusters.ForEach(thruster => {
+                    _context.thrusterManager.backward.thrusters.ForEach(thruster => {
                         if (error < -0.1) {
                             thruster.Enabled = true;
                             thruster.ThrustOverridePercentage = Math.Min(100, (float)error / CruiseTarget * 100 / maxAccel) * 0.1f;
@@ -268,14 +256,18 @@ namespace IngameScript {
                 }
 
                 Vector3D gravity = controller.GetNaturalGravity();
-                gravity.Normalize();
+                if (gravity.Length() == 0) gravity = controller.GetArtificialGravity();
+                if (gravity.Length() != 0) gravity.Normalize();
 
                 double offLevel = 0.0;
 
-                Vector3 mouse = new Vector3(controller.RotationIndicator * 0.1f, controller.RollIndicator * 9);
-                mouse *= _config.MouseSensitivity;
-
                 foreach (var gyro in gyrosToUse) {
+
+                    if (Math.Abs(controller.RotationIndicator.Length()) > 0.1f || Math.Abs(controller.RollIndicator) > 0.1f || gravity.Length() == 0) {
+                        gyro.GyroOverride = false;
+                        continue;
+                    }
+
                     gyro.Orientation.GetMatrix(out orientation);
                     var localDown = Vector3D.Transform(down, MatrixD.Transpose(orientation));
                     var localGrav = Vector3D.Transform(gravity, MatrixD.Transpose(gyro.WorldMatrix.GetOrientation()));
@@ -283,13 +275,6 @@ namespace IngameScript {
                     var rotation = Vector3D.Cross(localDown, localGrav);
                     double ang = rotation.Length();
                     ang = Math.Atan2(ang, Math.Sqrt(Math.Max(0.0, 1.0 - ang * ang)));
-
-                    /*
-                    if (ang < 0.01)
-                    {
-                        gyro.GyroOverride = false;
-                        continue;
-                    }*/
                     offLevel += ang * 180.0 / 3.14;
 
                     if (!onlyCalculate) {
@@ -298,9 +283,9 @@ namespace IngameScript {
                         controlVelocity = Math.Max(0.01, controlVelocity); //Gyros don't work well at very low speeds
                         rotation.Normalize();
                         rotation *= controlVelocity;
-                        gyro.SetValueFloat("Pitch", (float)rotation.GetDim(0) + mouse.X);
-                        gyro.SetValueFloat("Yaw", -((float)rotation.GetDim(1) - mouse.Y));
-                        gyro.SetValueFloat("Roll", -(float)rotation.GetDim(2) - mouse.Z);
+                        gyro.SetValueFloat("Pitch", (float)rotation.GetDim(0));
+                        gyro.SetValueFloat("Yaw", -((float)rotation.GetDim(1)));
+                        gyro.SetValueFloat("Roll", -(float)rotation.GetDim(2));
                         //gyro.SetValueFloat("Power", 1.0f);
                         gyro.GyroOverride = true;
                     }

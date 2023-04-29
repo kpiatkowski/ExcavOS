@@ -23,6 +23,7 @@ namespace IngameScript {
             public string CargoTrackGroupName = "";
             public string AlignGyrosGroupName = "";
             public string DumpSortersGroupName = "";
+            public string DockTag = "[Excav Parking]";
             public float LiftThresholdWarning = 0.9f;
             public float MouseSensitivity = 1f;
 
@@ -33,14 +34,17 @@ namespace IngameScript {
                 _ini.Set(_section, "CargoTrackGroupName", CargoTrackGroupName);
                 _ini.Set(_section, "AlignGyrosGroupName", AlignGyrosGroupName);
                 _ini.Set(_section, "DumpSortersGroupName", DumpSortersGroupName);
-                _ini.Set(_section, "MouseSensitivity", MouseSensitivity);
+                _ini.Set(_section, "DockTag", DockTag);
                 _ini.Set(_section, "LiftThresholdWarning", LiftThresholdWarning);
+                _ini.Set(_section, "MouseSensitivity", MouseSensitivity);
+
             }
 
             public override void ReadConfig() {
                 CargoTrackGroupName = GetValue("CargoTrackGroupName").ToString(CargoTrackGroupName);
                 AlignGyrosGroupName = GetValue("AlignGyrosGroupName").ToString(AlignGyrosGroupName);
                 DumpSortersGroupName = GetValue("DumpSortersGroupName").ToString(DumpSortersGroupName);
+                DockTag = GetValue("DockTag").ToString(DockTag);
                 LiftThresholdWarning = GetValue("LiftThresholdWarning").ToSingle(LiftThresholdWarning);
                 MouseSensitivity = GetValue("MouseSensitivity").ToSingle(MouseSensitivity);
             }

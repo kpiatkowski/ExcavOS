@@ -21,17 +21,29 @@ using VRageMath;
 namespace IngameScript {
     partial class Program {
 
-        public class ThrustGroups {
-            public ThrustGroup up = new ThrustGroup();
-            public ThrustGroup down = new ThrustGroup();
-            public ThrustGroup left = new ThrustGroup();
-            public ThrustGroup right = new ThrustGroup();
-            public ThrustGroup forward = new ThrustGroup();
-            public ThrustGroup backward = new ThrustGroup();
+        public class ThrusterManager {
+
+            public ThrustGroup up;
+            public ThrustGroup down;
+            public ThrustGroup left;
+            public ThrustGroup right;
+            public ThrustGroup forward;
+            public ThrustGroup backward;
 
             public List<ThrustGroup> groups;
 
-            public ThrustGroups() {
+            private readonly ExcavOSContext _context;
+
+            public ThrusterManager(ExcavOSContext context) {
+                _context = context;
+
+                up = new ThrustGroup(_context);
+                down = new ThrustGroup(_context);
+                left = new ThrustGroup(_context);
+                right = new ThrustGroup(_context);
+                forward = new ThrustGroup(_context);
+                backward = new ThrustGroup(_context);
+
                 groups = new List<ThrustGroup>();
                 groups.Add(up);
                 groups.Add(down);
@@ -83,17 +95,35 @@ namespace IngameScript {
                 return totalAccel;
             }
         }
+
         public class ThrustGroup {
+
             public List<IMyThrust> thrusters = new List<IMyThrust>();
             public double maxThrust;
             public bool allWorking = false;
             public Vector3D direction;
+            private readonly ExcavOSContext _context;
+
+            public ThrustGroup(ExcavOSContext context) {
+                _context = context;
+            }
 
             public void Update() {
 
                 maxThrust = 0;
                 allWorking = true;
+
+
+
                 foreach (IMyThrust thrust in thrusters) {
+
+                    if (_context.systemManager.ShipState == ShipState.isDocked || _context.systemManager.ShipState == ShipState.isStatic) {
+                        thrust.Enabled = false;
+                    }
+                    else if (_context.systemManager.ShipState == ShipState.isControlled || _context.systemManager.ShipState == ShipState.isIdle) {
+                        thrust.Enabled = thrust.MaxEffectiveThrust > 0;
+                    }
+
                     if (!thrust.IsWorking) {
                         allWorking = false;
                         continue;
@@ -119,6 +149,5 @@ namespace IngameScript {
                 return effectiveAcceleration + Vector3D.Dot(gravity, direction);
             }
         }
-
     }
 }

@@ -20,38 +20,42 @@ using VRageMath;
 namespace IngameScript {
     partial class Program {
         public class ExcavOSContext {
-            public Program _program;
-            private Config _config;
-            public MyIni _storage;
+            public ExcavOSContext _context;
+            public Program program;
+            public Config config;
+            public MyIni storage;
 
             public TimeSpan TimeAccumulator;
             public Random Randomizer = new Random();
-            public CargoManager _cargoManager;
-            public WeightAnalizer _weightAnalizer;
-            public UtilityManager _utilitymanager;
-            public SystemManager _systemmanager;
+            public CargoManager cargoManager;
+            public WeightAnalizer weightAnalizer;
+            public UtilityManager utilitymanager;
+            public SystemManager systemManager;
+            public ThrusterManager thrusterManager;
             public int tick;
 
             public ExcavOSContext(Program program, Config config, MyIni storage) {
-                _program = program;
-                _config = config;
-                _storage = storage;
-                _cargoManager = new CargoManager(_program, _config);
-                _systemmanager = new SystemManager(_program, _config);
-                _weightAnalizer = new WeightAnalizer(_program, _config, _cargoManager, _systemmanager);
-                _utilitymanager = new UtilityManager(_program, _config, _cargoManager, _systemmanager, _storage);
+                _context = this;
+                this.program = program;
+                this.config = config;
+                this.storage = storage;
+                cargoManager = new CargoManager(_context);
+                systemManager = new SystemManager(_context);
+                thrusterManager = new ThrusterManager(_context);
+                weightAnalizer = new WeightAnalizer(_context);
+                utilitymanager = new UtilityManager(_context);
             }
 
             public void Save() {
-                _utilitymanager.Save();
+                utilitymanager.Save();
             }
 
             public void Update(TimeSpan time) {
                 TimeAccumulator = time;
-                _cargoManager.QueryData();
-                _weightAnalizer.QueryData(time);
-                _utilitymanager.Update();
-                _systemmanager.Update();
+                cargoManager.QueryData();
+                weightAnalizer.QueryData(time);
+                utilitymanager.Update();
+                systemManager.Update();
                 tick++;
             }
 
@@ -59,38 +63,38 @@ namespace IngameScript {
                 string[] args = argument.Split(' ');
                 switch (args[0].ToLower()) {
                     case "toggle_gaa":
-                        _utilitymanager.GravityAlign = !_utilitymanager.GravityAlign;
+                        utilitymanager.GravityAlign = !utilitymanager.GravityAlign;
                         break;
                     case "set_gaa_pitch":
                         char modifier = args[1][0];
                         float pitch = float.Parse(args[1]);
                         if (modifier.ToString() == "+" || modifier.ToString() == "-") {
-                            _utilitymanager.GravityAlignPitch += pitch;
+                            utilitymanager.GravityAlignPitch += pitch;
                         }
                         else if (!float.IsNaN(pitch)) {
-                            _utilitymanager.GravityAlignPitch = pitch;
+                            utilitymanager.GravityAlignPitch = pitch;
                         }
-                        _utilitymanager.GravityAlignPitch = MathHelper.Clamp(_utilitymanager.GravityAlignPitch, -90, 90);
+                        utilitymanager.GravityAlignPitch = MathHelper.Clamp(utilitymanager.GravityAlignPitch, -90, 90);
                         break;
                     case "toggle_cruise":
-                        _utilitymanager.CruiseEnabled = !_utilitymanager.CruiseEnabled;
-                        if (!_utilitymanager.CruiseEnabled) {
-                            _systemmanager.ThrusterGroups.forward.thrusters.ForEach(thruster => { thruster.ThrustOverridePercentage = 0.0f; thruster.Enabled = true; });
-                            _systemmanager.ThrusterGroups.backward.thrusters.ForEach(thruster => { thruster.ThrustOverridePercentage = 0.0f; thruster.Enabled = true; });
+                        utilitymanager.CruiseEnabled = !utilitymanager.CruiseEnabled;
+                        if (!utilitymanager.CruiseEnabled) {
+                            thrusterManager.forward.thrusters.ForEach(thruster => { thruster.ThrustOverridePercentage = 0.0f; thruster.Enabled = true; });
+                            thrusterManager.backward.thrusters.ForEach(thruster => { thruster.ThrustOverridePercentage = 0.0f; thruster.Enabled = true; });
                         }
                         break;
                     case "set_cruise":
                         modifier = args[1][0];
                         float speed = float.Parse(args[1]);
                         if (modifier.ToString() == "+" || modifier.ToString() == "-") {
-                            _utilitymanager.CruiseTarget += speed;
+                            utilitymanager.CruiseTarget += speed;
                         }
                         else if (!float.IsNaN(speed)) {
-                            _utilitymanager.CruiseTarget = speed;
+                            utilitymanager.CruiseTarget = speed;
                         }
                         break;
                     case "dump":
-                        _utilitymanager.SetSortersFilter(args[1]);
+                        utilitymanager.SetSortersFilter(args[1]);
                         break;
                 }
             }

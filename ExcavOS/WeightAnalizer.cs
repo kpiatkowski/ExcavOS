@@ -15,16 +15,13 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRage;
 using VRageMath;
-using static IngameScript.Program.ThrustGroups;
+using static IngameScript.Program.ThrusterManager;
 
 namespace IngameScript {
     internal partial class Program {
         public class WeightAnalizer {
-            private Program _program;
-            private Config _config;
+            private readonly ExcavOSContext _context;
             public string Status;
-            private CargoManager _cargoManager;
-            private SystemManager _systemManager;
 
             public float LiftThrustUsage;
             public float StoppingDistance;
@@ -40,11 +37,8 @@ namespace IngameScript {
             private WeightPoint[] _weightPoints = new WeightPoint[MaxWeightPoints];
             private int addedWeightPoints = 0;
 
-            public WeightAnalizer(Program program, Config config, CargoManager cargoManager, SystemManager systemManager) {
-                _program = program;
-                _config = config;
-                _cargoManager = cargoManager;
-                _systemManager = systemManager;
+            public WeightAnalizer(ExcavOSContext context) {
+                _context = context;
             }
 
             public void QueryData(TimeSpan time) {
@@ -53,33 +47,33 @@ namespace IngameScript {
             }
 
             public float GetLiftThresholdWarning() {
-                return _config.LiftThresholdWarning;
+                return _context.config.LiftThresholdWarning;
             }
 
             private void Calculate() {
 
-                if (_systemManager.ActiveController == null) {
+                if (_context.systemManager.ActiveController == null) {
                     Status = "Missing controller";
                     return;
                 }
 
-                if (_systemManager.ActiveController.CalculateShipMass().PhysicalMass == 0) {
+                if (_context.systemManager.ActiveController.CalculateShipMass().PhysicalMass == 0) {
                     Status = "Grid is static";
                 }
                 else {
                     Status = "";
                 }
-                float mass = _systemManager.ActiveController.CalculateShipMass().PhysicalMass;
-                Vector3D direction = _systemManager.ActiveController.GetShipVelocities().LinearVelocity.Normalized();
-                Vector3D gravity = _systemManager.ActiveController.GetNaturalGravity();
-                double speed = _systemManager.ActiveController.GetShipSpeed();
+                float mass = _context.systemManager.ActiveController.CalculateShipMass().PhysicalMass;
+                Vector3D direction = _context.systemManager.ActiveController.GetShipVelocities().LinearVelocity.Normalized();
+                Vector3D gravity = _context.systemManager.ActiveController.GetNaturalGravity();
+                double speed = _context.systemManager.ActiveController.GetShipSpeed();
 
-                _systemManager.ThrusterGroups.UpdateAll();
-                LiftThrustUsage = (float)CalculateLiftThrustUsage(_systemManager.ActiveController, _systemManager.ThrusterGroups);
-                CalculateStopDistance(speed, direction, gravity, mass, _systemManager.ThrusterGroups);
+                _context.thrusterManager.UpdateAll();
+                LiftThrustUsage = (float)CalculateLiftThrustUsage(_context.systemManager.ActiveController, _context.thrusterManager);
+                CalculateStopDistance(speed, direction, gravity, mass, _context.thrusterManager);
             }
 
-            private double CalculateLiftThrustUsage(IMyShipController controller, ThrustGroups thrusterGroups) {
+            private double CalculateLiftThrustUsage(IMyShipController controller, ThrusterManager thrusterGroups) {
                 double ThrustUsage = 0;
                 float mass = controller.CalculateShipMass().PhysicalMass;
                 Vector3D gravity = controller.GetNaturalGravity();
@@ -87,7 +81,6 @@ namespace IngameScript {
                 foreach (ThrustGroup thrustGroup in thrusterGroups.groups) {
                     var GravAccel = Vector3D.Dot(gravity, thrustGroup.direction);
                     if (GravAccel > 0) continue;
-
 
                     double maxAcceleration = thrustGroup.maxThrust / mass;
                     double effectiveAcceleration = maxAcceleration + GravAccel;
@@ -101,7 +94,7 @@ namespace IngameScript {
                 return ThrustUsage;
             }
 
-            private void CalculateStopDistance(double CurrentSpeed, Vector3D Direction, Vector3D Gravity, Double Mass, ThrustGroups thrustGroups) {
+            private void CalculateStopDistance(double CurrentSpeed, Vector3D Direction, Vector3D Gravity, Double Mass, ThrusterManager thrustGroups) {
 
                 double effectiveAcceleration = thrustGroups.AccelerationInDirection(Direction, Gravity, Mass);
                 StoppingTime = (float)(-CurrentSpeed / effectiveAcceleration);
@@ -111,7 +104,7 @@ namespace IngameScript {
             private void CalculateCapacityDelta(TimeSpan time) {
                 WeightPoint wp = new WeightPoint {
                     time = time.TotalSeconds,
-                    capacity = _cargoManager.CurrentCapacity / _cargoManager.TotalCapacity
+                    capacity = _context.cargoManager.CurrentCapacity / _context.cargoManager.TotalCapacity
                 };
 
                 if (addedWeightPoints < MaxWeightPoints) {
